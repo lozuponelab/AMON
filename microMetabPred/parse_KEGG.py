@@ -1,3 +1,5 @@
+# TODO: make get_from_kegg_api take parser as argument and return list of parsed files instead of list of raw files
+
 import asyncio
 import aiohttp
 
@@ -23,7 +25,7 @@ async def download_coroutine(session, url):
         if response.status == 200:
             return await response.text()
         else:
-            raise ValueError('Bad connection: %s' % response.text())
+            raise ValueError('Bad connection: %s' % url)
 
 
 async def kegg_download_manager(loop, list_of_ids):
@@ -63,6 +65,11 @@ def parse_ko(ko_raw_record):
                 if current_entry_name not in ko_dict:
                     ko_dict[current_entry_name] = list()
                 ko_dict[current_entry_name].append((current_entry_pathway_id, current_entry_pathway_name))
+            elif current_entry_name == 'CLASS':
+                if 'CLASS' in ko_dict:
+                    ko_dict['CLASS'].append(current_entry_data)
+                else:
+                    ko_dict['CLASS'] = [current_entry_data]
             elif current_entry_name == 'BRITE':
                 pass
             elif current_entry_name == 'DBLINKS' or current_entry_name == 'GENES':
@@ -88,8 +95,10 @@ def parse_rn(rn_raw_record):
         current_entry_data = line[12:].strip()
         if current_entry_name == 'ENTRY':
             rn_dict[current_entry_name] = current_entry_data.split()[0]
-        elif current_entry_name in ('NAME', 'DEFINITION', 'COMMENT', 'ENZYME'):
+        elif current_entry_name in ('NAME', 'DEFINITION', 'REMARK','COMMENT', 'ENZYME'):
             rn_dict[current_entry_name] = current_entry_data
+        elif current_entry_name == 'RPAIR':
+            rn_dict[current_entry_name] = current_entry_data.split()
         elif current_entry_name == 'DEFINITION' or current_entry_name == 'EQUATION':
             equation_split = current_entry_data.split(' <=> ')
             if len(equation_split) != 2:
@@ -108,8 +117,10 @@ def parse_rn(rn_raw_record):
             if current_entry_name not in rn_dict:
                 rn_dict[current_entry_name] = dict()
                 rn_dict[current_entry_name][split_current_entry_data[0]] = split_current_entry_data[1].split()
+        elif current_entry_name in ('REFERENCE', 'AUTHORS', 'TITLE', 'JOURNAL'):
+            pass
         else:
-            raise ValueError('What is %s?' % current_entry_name)
+            raise ValueError('What is %s in %s?' % (current_entry_name, rn_dict['ENTRY']))
         past_entry = current_entry_name
     return rn_dict
 
@@ -129,9 +140,9 @@ def parse_co(co_raw_record):
                 co_dict[current_entry_name] = current_entry_data
             else:
                 co_dict[current_entry_name] += ' %s' % current_entry_data
-        elif current_entry_name in ('FORMULA', 'EXACT_MASS', 'MOL_WEIGHT', 'REMARK'):
+        elif current_entry_name in ('FORMULA', 'EXACT_MASS', 'MOL_WEIGHT', 'REMARK', 'COMMENT'):
             co_dict[current_entry_name] = current_entry_data
-        elif current_entry_name in ('REACTION', 'ENZYME'):
+        elif current_entry_name in ('REACTION', 'ENZYME', 'SEQUENCE'):
             if current_entry_name in co_dict:
                 co_dict[current_entry_name] += current_entry_data.split()
             else:
@@ -144,15 +155,22 @@ def parse_co(co_raw_record):
                 co_dict[current_entry_name] = [(current_entry_pathway_id, current_entry_pathway_name)]
             else:
                 co_dict[current_entry_name].append((current_entry_pathway_id, current_entry_pathway_name))
-        elif current_entry_name in ('BRITE', 'ATOM', 'BOND'):
+        # Structural information we are currently ignoring
+        elif current_entry_name in ('BRITE', 'ATOM', 'BOND', 'BRACKET', 'ORIGINAL', 'REPEAT'):
+            pass
+        # Protein information we are currently ignoring
+        elif current_entry_name in ('SEQUENCE', 'GENE', 'ORGANISM'):
             pass
         elif current_entry_name == 'DBLINKS':
             split_current_entry_data = current_entry_data.split(': ')
             if current_entry_name not in co_dict:
                 co_dict[current_entry_name] = dict()
                 co_dict[current_entry_name][split_current_entry_data[0]] = split_current_entry_data[1].split()
+        # Reference information we are currently ignoring
+        elif current_entry_name in ('REFERENCE', 'AUTHORS', 'TITLE', 'JOURNAL'):
+            pass
         else:
-            raise ValueError('What is %s?' % current_entry_name)
+            raise ValueError('What is %s in %s?' % (current_entry_name, co_dict['ENTRY']))
         past_entry = current_entry_name
     return co_dict
 
@@ -167,11 +185,12 @@ def parse_pathway(pathway_raw_record):
         current_entry_data = line[12:].strip()
         if current_entry_name == 'ENTRY':
             pathway_dict[current_entry_name] = current_entry_data.split()[0]
-        elif current_entry_name in ('NAME', 'DESCRIPTION'):
+        elif current_entry_name in ('NAME', 'DESCRIPTION', 'KO_PATHWAY'):
             pathway_dict[current_entry_name] = current_entry_data
         elif current_entry_name == 'CLASS':
             pathway_dict[current_entry_name] = [(i[:5], i[6:]) for i in current_entry_data.split('; ')]
-        elif current_entry_name in ('PATHWAY_MAP', 'MODULE', 'DISEASE', 'DRUG', 'ORTHOLOGY', 'COMPOUND'):
+        elif current_entry_name in ('PATHWAY_MAP', 'MODULE', 'DISEASE', 'DRUG', 'ORTHOLOGY', 'COMPOUND', 'REL_PATHWAY',
+                                    'REACTION', 'ENZYME'):
             split_current_entry_data = current_entry_data.split()
             current_entry_pathway_id = split_current_entry_data[0]
             current_entry_pathway_name = ' '.join(split_current_entry_data[1:])
@@ -179,6 +198,9 @@ def parse_pathway(pathway_raw_record):
                 pathway_dict[current_entry_name] = [(current_entry_pathway_id, current_entry_pathway_name)]
             else:
                 pathway_dict[current_entry_name].append((current_entry_pathway_id, current_entry_pathway_name))
+        # Protein information we are currently ignoring
+        elif current_entry_name in ('GENE', 'ORGANISM'):
+            pass
         elif current_entry_name == 'DBLINKS':
             split_current_entry_data = current_entry_data.split(': ')
             if current_entry_name not in pathway_dict:
@@ -186,7 +208,19 @@ def parse_pathway(pathway_raw_record):
                 pathway_dict[current_entry_name][split_current_entry_data[0]] = split_current_entry_data[1].split()
         elif current_entry_name in ('REFERENCE', 'AUTHORS', 'TITLE', 'JOURNAL'):
             pass
+        elif current_entry_name != current_entry_name.upper():
+            pass
         else:
-            raise ValueError('What is %s in %s?' % (current_entry_name, pathway_dict['ENTRY']))
+            raise ValueError('What is %s in %s?' % (line, pathway_dict['ENTRY']))
+            # print('What is %s in %s?' % (line, pathway_dict['ENTRY']))
         past_entry = current_entry_name
     return pathway_dict
+
+
+def get_from_kegg_flat_file(file_loc, list_of_ids, parser=parse_ko):
+    record_list = list()
+    for entry in open(file_loc).read().split('///')[:-1]:
+        record = parser(entry)
+        if record['ENTRY'] in list_of_ids:
+            record_list.append(record)
+    return record_list
