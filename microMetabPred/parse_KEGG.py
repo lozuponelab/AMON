@@ -1,0 +1,192 @@
+import asyncio
+import aiohttp
+
+
+def get_human_genome(hsa_loc):
+    # get human in and out
+    human_file = open(hsa_loc)
+    human_kos = list()
+    for line in human_file:
+        if "ORTHOLOGY" in line:
+            human_kos.append(line.strip().split()[1])
+    return human_kos
+
+
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
+
+async def download_coroutine(session, url):
+    async with session.get(url) as response:
+        if response.status == 200:
+            return await response.text()
+        else:
+            raise ValueError('Bad connection: %s' % response.text())
+
+
+async def kegg_download_manager(loop, list_of_ids):
+    urls = ['http://rest.kegg.jp/get/%s' % '+'.join(chunk) for chunk in chunks(list(list_of_ids), 10)]
+
+    async with aiohttp.ClientSession(loop=loop) as session:
+        tasks = [download_coroutine(session, url) for url in urls]
+        results = await asyncio.gather(*tasks)
+
+    return [raw_record for raw_records in results for raw_record in raw_records.split('///')[:-1]]
+
+
+def get_from_kegg_api(list_of_ids):
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(kegg_download_manager(loop, list_of_ids))
+
+
+def parse_ko(ko_raw_record):
+    ko_dict = dict()
+    past_entry = None
+    for line in ko_raw_record.strip().split('\n'):
+        current_entry_name = line[:12].strip()
+        if current_entry_name == '':
+            current_entry_name = past_entry
+        current_entry_data = line[12:].strip()
+        if current_entry_name != '':
+            if current_entry_name == 'ENTRY':
+                ko_dict[current_entry_name] = current_entry_data.split()[0]
+            elif current_entry_name == 'NAME':
+                ko_dict[current_entry_name] = current_entry_data.split(', ')
+            elif current_entry_name == 'DEFINITION':
+                ko_dict[current_entry_name] = current_entry_data
+            elif current_entry_name in ('PATHWAY', 'MODULE', 'DISEASE'):
+                split_current_entry_data = current_entry_data.split()
+                current_entry_pathway_id = split_current_entry_data[0]
+                current_entry_pathway_name = ' '.join(split_current_entry_data[1:])
+                if current_entry_name not in ko_dict:
+                    ko_dict[current_entry_name] = list()
+                ko_dict[current_entry_name].append((current_entry_pathway_id, current_entry_pathway_name))
+            elif current_entry_name == 'BRITE':
+                pass
+            elif current_entry_name == 'DBLINKS' or current_entry_name == 'GENES':
+                split_current_entry_data = current_entry_data.split(': ')
+                if current_entry_name not in ko_dict:
+                    ko_dict[current_entry_name] = dict()
+                ko_dict[current_entry_name][split_current_entry_data[0]] = split_current_entry_data[1].split()
+            elif current_entry_name in ('REFERENCE', 'AUTHORS', 'TITLE', 'JOURNAL', 'SEQUENCE'):
+                pass
+            else:
+                raise ValueError('What is %s in %s?' % (current_entry_name, ko_dict['ENTRY']))
+        past_entry = current_entry_name
+    return ko_dict
+
+
+def parse_rn(rn_raw_record):
+    rn_dict = dict()
+    past_entry = None
+    for line in rn_raw_record.strip().split('\n'):
+        current_entry_name = line[:12].strip()
+        if current_entry_name == '':
+            current_entry_name = past_entry
+        current_entry_data = line[12:].strip()
+        if current_entry_name == 'ENTRY':
+            rn_dict[current_entry_name] = current_entry_data.split()[0]
+        elif current_entry_name in ('NAME', 'DEFINITION', 'COMMENT', 'ENZYME'):
+            rn_dict[current_entry_name] = current_entry_data
+        elif current_entry_name == 'DEFINITION' or current_entry_name == 'EQUATION':
+            equation_split = current_entry_data.split(' <=> ')
+            if len(equation_split) != 2:
+                raise ValueError("Equation does not have two parts: %s" % current_entry_data)
+            rn_dict[current_entry_name] = [(equation_split[0].strip().split(' + ')),
+                                           (equation_split[1].strip().split(' + '))]
+        elif current_entry_name in ('RCLASS', 'PATHWAY', 'ORTHOLOGY', 'MODULE'):
+            split_current_entry_data = current_entry_data.split()
+            current_entry_pathway_id = split_current_entry_data[0]
+            current_entry_pathway_name = ' '.join(split_current_entry_data[1:])
+            if current_entry_name not in rn_dict:
+                rn_dict[current_entry_name] = list()
+            rn_dict[current_entry_name].append((current_entry_pathway_id, current_entry_pathway_name))
+        elif current_entry_name == 'DBLINKS':
+            split_current_entry_data = current_entry_data.split(': ')
+            if current_entry_name not in rn_dict:
+                rn_dict[current_entry_name] = dict()
+                rn_dict[current_entry_name][split_current_entry_data[0]] = split_current_entry_data[1].split()
+        else:
+            raise ValueError('What is %s?' % current_entry_name)
+        past_entry = current_entry_name
+    return rn_dict
+
+
+def parse_co(co_raw_record):
+    co_dict = dict()
+    past_entry = None
+    for line in co_raw_record.strip().split('\n'):
+        current_entry_name = line[:12].strip()
+        if current_entry_name == '':
+            current_entry_name = past_entry
+        current_entry_data = line[12:].strip()
+        if current_entry_name == 'ENTRY':
+            co_dict[current_entry_name] = current_entry_data.split()[0]
+        elif current_entry_name == 'NAME':
+            if current_entry_name not in co_dict:
+                co_dict[current_entry_name] = current_entry_data
+            else:
+                co_dict[current_entry_name] += ' %s' % current_entry_data
+        elif current_entry_name in ('FORMULA', 'EXACT_MASS', 'MOL_WEIGHT', 'REMARK'):
+            co_dict[current_entry_name] = current_entry_data
+        elif current_entry_name in ('REACTION', 'ENZYME'):
+            if current_entry_name in co_dict:
+                co_dict[current_entry_name] += current_entry_data.split()
+            else:
+                co_dict[current_entry_name] = current_entry_data.split()
+        elif current_entry_name in ('PATHWAY', 'MODULE'):
+            split_current_entry_data = current_entry_data.split()
+            current_entry_pathway_id = split_current_entry_data[0]
+            current_entry_pathway_name = ' '.join(split_current_entry_data[1:])
+            if current_entry_name not in co_dict:
+                co_dict[current_entry_name] = [(current_entry_pathway_id, current_entry_pathway_name)]
+            else:
+                co_dict[current_entry_name].append((current_entry_pathway_id, current_entry_pathway_name))
+        elif current_entry_name in ('BRITE', 'ATOM', 'BOND'):
+            pass
+        elif current_entry_name == 'DBLINKS':
+            split_current_entry_data = current_entry_data.split(': ')
+            if current_entry_name not in co_dict:
+                co_dict[current_entry_name] = dict()
+                co_dict[current_entry_name][split_current_entry_data[0]] = split_current_entry_data[1].split()
+        else:
+            raise ValueError('What is %s?' % current_entry_name)
+        past_entry = current_entry_name
+    return co_dict
+
+
+def parse_pathway(pathway_raw_record):
+    pathway_dict = dict()
+    past_entry = None
+    for line in pathway_raw_record.strip().split('\n'):
+        current_entry_name = line[:12].strip()
+        if current_entry_name == '':
+            current_entry_name = past_entry
+        current_entry_data = line[12:].strip()
+        if current_entry_name == 'ENTRY':
+            pathway_dict[current_entry_name] = current_entry_data.split()[0]
+        elif current_entry_name in ('NAME', 'DESCRIPTION'):
+            pathway_dict[current_entry_name] = current_entry_data
+        elif current_entry_name == 'CLASS':
+            pathway_dict[current_entry_name] = [(i[:5], i[6:]) for i in current_entry_data.split('; ')]
+        elif current_entry_name in ('PATHWAY_MAP', 'MODULE', 'DISEASE', 'DRUG', 'ORTHOLOGY', 'COMPOUND'):
+            split_current_entry_data = current_entry_data.split()
+            current_entry_pathway_id = split_current_entry_data[0]
+            current_entry_pathway_name = ' '.join(split_current_entry_data[1:])
+            if current_entry_name not in pathway_dict:
+                pathway_dict[current_entry_name] = [(current_entry_pathway_id, current_entry_pathway_name)]
+            else:
+                pathway_dict[current_entry_name].append((current_entry_pathway_id, current_entry_pathway_name))
+        elif current_entry_name == 'DBLINKS':
+            split_current_entry_data = current_entry_data.split(': ')
+            if current_entry_name not in pathway_dict:
+                pathway_dict[current_entry_name] = dict()
+                pathway_dict[current_entry_name][split_current_entry_data[0]] = split_current_entry_data[1].split()
+        elif current_entry_name in ('REFERENCE', 'AUTHORS', 'TITLE', 'JOURNAL'):
+            pass
+        else:
+            raise ValueError('What is %s in %s?' % (current_entry_name, pathway_dict['ENTRY']))
+        past_entry = current_entry_name
+    return pathway_dict

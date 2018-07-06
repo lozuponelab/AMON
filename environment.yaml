@@ -1,0 +1,16 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.*
+  - scipy
+  - numpy
+  - matplotlib
+  - pandas
+  - seaborn
+  - statsmodels
+  - biom-format
+  - requests
+  - tqdm
+  - pip:
+    - matplotlib-venn
