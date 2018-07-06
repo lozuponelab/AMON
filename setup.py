@@ -8,7 +8,7 @@ setup(
       version=__version__,
       setup_requires=['pytest-runner'],
       test_require=['pytest'],
-      install_requires=["scipy", "biom-format", "pandas", "matplotlib", "statsmodels", "requests", "tqdm"],
+      install_requires=["scipy", "biom-format", "pandas", "matplotlib", "statsmodels", "requests", "tqdm", "numpy"],
       scripts=["scripts/MicroMetabPred.py"],
       packages=find_packages(),
       description="A tool for predicting putative metabolite origins for microbes or between microbes and host with or"

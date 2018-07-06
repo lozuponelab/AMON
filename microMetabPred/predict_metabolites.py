@@ -1,7 +1,5 @@
 # TODO: make remove measured cos w/o reaction option
 # TODO: make read in biom table of kos or cos an option
-# TODO: accept kegg files to parse as input
-# TODO: rewrite get dict methods to all be one method that takes a parser and file loc
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -11,8 +9,7 @@ from os import path
 from statsmodels.sandbox.stats.multicomp import multipletests
 import numpy as np
 
-from microMetabPred.parse_KEGG import get_from_kegg_api, parse_ko, parse_rn, parse_co, parse_pathway, \
-                                      get_from_kegg_flat_file
+from microMetabPred.parse_KEGG import parse_ko, parse_rn, parse_co, parse_pathway, get_kegg_record_dict
 
 
 def p_adjust(pvalues, method='fdr_bh'):
@@ -22,16 +19,6 @@ def p_adjust(pvalues, method='fdr_bh'):
 
 def parse_whitespace_sep(file_loc):
     return [i.strip() for i in open(file_loc).readlines()]
-
-
-def get_ko_dict(list_of_kos, ko_file_loc=None):
-    if ko_file_loc is None:
-        ko_raw_records = get_from_kegg_api(list_of_kos)
-        ko_records = [parse_ko(i) for i in ko_raw_records]
-    else:
-        ko_records = get_from_kegg_flat_file(ko_file_loc, list_of_kos, parse_ko)
-    print("%s ko records acquired" % len(ko_records))
-    return {ko_record['ENTRY']: ko_record for ko_record in ko_records}
 
 
 def get_rns_from_kos(list_of_kos, ko_dict):
@@ -45,16 +32,6 @@ def get_rns_from_kos(list_of_kos, ko_dict):
             # print('KO %s does not exist in KEGG?' % ko)
             pass
     return reaction_set
-
-
-def get_reaction_dict(list_of_reactions, rn_file_loc=None):
-    if rn_file_loc is None:
-        rn_raw_records = get_from_kegg_api(list_of_reactions)
-        rn_records = [parse_rn(i) for i in rn_raw_records]
-    else:
-        rn_records = get_from_kegg_flat_file(rn_file_loc, list_of_reactions, parse_rn)
-    print("%s rn records acquired" % len(rn_records))
-    return {rn_record['ENTRY']: rn_record for rn_record in rn_records}
 
 
 def get_products_from_rns(list_of_rns, rn_dict):
@@ -90,32 +67,12 @@ def make_venn(bac_cos, host_cos=None, measured_cos=None, output_loc=None):
         plt.savefig(output_loc)
 
 
-def get_compound_dict(list_of_compounds, co_file_loc):
-    if co_file_loc is None:
-        co_raw_records = get_from_kegg_api(list_of_compounds)
-        co_records = [parse_co(i) for i in co_raw_records]
-    else:
-        co_records = get_from_kegg_flat_file(co_file_loc, list_of_compounds, parse_co)
-    print("%s co records acquired" % len(co_records))
-    return {co_record['ENTRY']: co_record for co_record in co_records}
-
-
 def get_pathways_from_cos(co_dict):
     pathway_list = list()
     for co_record in co_dict.values():
         if 'PATHWAY' in co_record:
             pathway_list += [pathway[0] for pathway in co_record['PATHWAY']]
     return pathway_list
-
-
-def get_pathway_dict(list_of_pathways, pathway_file_loc):
-    if pathway_file_loc is None:
-        co_raw_records = get_from_kegg_api(list_of_pathways)
-        pathway_records = [parse_co(i) for i in co_raw_records]
-    else:
-        pathway_records = get_from_kegg_flat_file(pathway_file_loc, list_of_pathways, parse_pathway)
-    print("%s pathway records acquired" % len(pathway_records))
-    return {pathway_record['ENTRY']: pathway_record for pathway_record in pathway_records}
 
 
 def get_pathway_to_co_dict(pathway_dict, no_drug=True, no_glycan=True):
@@ -154,7 +111,7 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
     if other_kos_loc is not None:
         other_kos = parse_whitespace_sep(other_kos_loc)
         all_kos = all_kos + other_kos
-    ko_dict = get_ko_dict(set(all_kos), ko_file_loc)
+    ko_dict = get_kegg_record_dict(set(all_kos), parse_ko, ko_file_loc)
 
     # get all reactions from kos
     rns = get_rns_from_kos(kos, ko_dict)
@@ -162,7 +119,7 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
     if other_kos_loc is not None:
         other_rns = get_rns_from_kos(other_kos, ko_dict)
         all_rns = all_rns + rns
-    rn_dict = get_reaction_dict(set(all_rns), rn_file_loc)
+    rn_dict = get_kegg_record_dict(set(all_rns), parse_rn, rn_file_loc)
     cos_produced = get_products_from_rns(rns, rn_dict)
     if other_kos_loc is not None:
         other_cos_produced = get_products_from_rns(other_rns, rn_dict)
@@ -190,9 +147,9 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
             all_cos = cos_produced
         else:
             all_cos = cos_produced & other_cos_produced
-    co_dict = get_compound_dict(all_cos, co_file_loc)
+    co_dict = get_kegg_record_dict(all_cos, parse_co, co_file_loc)
     all_pathways = get_pathways_from_cos(co_dict)
-    pathway_dict = get_pathway_dict(all_pathways, pathway_file_loc)
+    pathway_dict = get_kegg_record_dict(all_pathways, parse_pathway, pathway_file_loc)
     pathway_to_compound_dict = get_pathway_to_co_dict(pathway_dict, no_glycan=False)
     enrichment_table = calculate_enrichment(cos_produced, pathway_to_compound_dict)
     enrichment_table.to_csv(path.join(output_dir, 'bacteria_enrichment.tsv'), sep='\t')

@@ -1,6 +1,6 @@
 import pytest
 
-from microMetabPred.parse_KEGG import get_from_kegg_api, parse_ko, parse_rn, parse_co, parse_pathway
+from microMetabPred.parse_KEGG import get_from_kegg_api, parse_ko, parse_rn, parse_co, parse_pathway, parse_organism
 
 
 @pytest.fixture()
@@ -14,12 +14,12 @@ def list_of_rxns():
 
 
 def test_get_from_kegg_kos(list_of_kos):
-    raw_entries = get_from_kegg_api(list_of_kos)
+    raw_entries = get_from_kegg_api(list_of_kos, parse_ko)
     assert len(raw_entries) == 2
 
 
 def test_get_from_kegg_rxns(list_of_rxns):
-    raw_entries = get_from_kegg_api(list_of_rxns)
+    raw_entries = get_from_kegg_api(list_of_rxns, parse_rn)
     assert len(raw_entries) == 2
 
 
@@ -105,3 +105,32 @@ def test_parse_pathway(pathway_raw_record):
     pathway_record = parse_pathway(pathway_raw_record)
     assert len(pathway_record) == 6
     assert set([compound[0] for compound in pathway_record['COMPOUND']]) == {'C00000', 'C99999'}
+
+
+@pytest.fixture()
+def organism_raw_record():
+    return "ENTRY       000000            CDS       H.sapiens\n" \
+           "NAME        SBS6969, ASBS1234\n" \
+           "DEFINITION  a fake guman gene\n" \
+           "ORTHOLOGY   K00000 Some fake orthology\n" \
+           "POSITION    1p1.1\n" \
+           "MOTIF       Pfam: ASDF, JKL1, HYDE\n" \
+           "            PROSITE: A_PROSITE_ID ANOTHER_PROSITE_ID\n" \
+           "DBLINKS     NCBI-GI: 00000000\n" \
+           "            HGNC: 00000\n" \
+           "AASEQ       12\n" \
+           "            QRHMIRHTGDGPYKCQECGKAFDRPSLFRIHERTHTGEKPHECKQCGKAFISFTNFQSHM\n" \
+           "            IRHTGDGPYKCKVCGRAFIFPSYVRKHERTHTGEKPYECNKCGKTFSSSSNVRTHERTHT\n" \
+           "            GEKPYECKECGKAFISLPSVRRHMIKHTGDGPYKCQVCGRAFDCPSSFQIHERTHTGEKP\n" \
+           "NTSEQ       1234\n" \
+           "            agaactcacactggtgagaaaccctatgcatgtccggaatgtgggaaagccttcatttct\n" \
+           "            ctcccaagtgttcgaagacacatgattaagcacactggagatggaccatataaatgtcag\n" \
+           "            gaatgtgggaaagcctttgatcgcccaagtttatttcagatacatgaaagaactcacact\n" \
+           "            ggagagaaaccctatgaatgtcaggaatgtgcaaaagctttcatttctcttccaagtttt\n"
+
+
+def test_parse_organism(organism_raw_record):
+    organism_record = parse_organism(organism_raw_record)
+    assert len(organism_record) == 7
+    assert len(organism_record['ORTHOLOGY']) == 1
+    assert organism_record['ORTHOLOGY'][0][0] == 'K00000'
