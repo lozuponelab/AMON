@@ -113,6 +113,10 @@ def organism_raw_record():
            "NAME        SBS6969, ASBS1234\n" \
            "DEFINITION  a fake guman gene\n" \
            "ORTHOLOGY   K00000 Some fake orthology\n" \
+           "PATHWAY     hsa00000  Specific Stuff\n" \
+           "            hsa99999  The Place\n" \
+           "CLASS       Things; Stuff; Specific Stuff [PATH:hsa00000]\n" \
+           "            This; Must Be; The Place [PATH:hsa99999]\n" \
            "POSITION    1p1.1\n" \
            "MOTIF       Pfam: ASDF, JKL1, HYDE\n" \
            "            PROSITE: A_PROSITE_ID ANOTHER_PROSITE_ID\n" \
@@ -131,6 +135,6 @@ def organism_raw_record():
 
 def test_parse_organism(organism_raw_record):
     organism_record = parse_organism(organism_raw_record)
-    assert len(organism_record) == 7
-    assert len(organism_record['ORTHOLOGY']) == 1
-    assert organism_record['ORTHOLOGY'][0][0] == 'K00000'
+    assert len(organism_record) == 9
+    assert len(organism_record['ORTHOLOGY']) == 2
+    assert organism_record['ORTHOLOGY'][0] == 'K00000'

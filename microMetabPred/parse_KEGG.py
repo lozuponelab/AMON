@@ -189,7 +189,12 @@ def parse_organism(gene_raw_record):
             gene_dict[current_entry_name] = current_entry_data.split(', ')
         elif current_entry_name in ('DEFINITION', 'POSITION'):
             gene_dict[current_entry_name] = current_entry_data
-        elif current_entry_name in ('ORTHOLOGY'):
+        elif current_entry_name == 'ORTHOLOGY':
+            split_current_entry_data = current_entry_data.split()
+            current_entry_pathway_id = split_current_entry_data[0]
+            current_entry_pathway_name = ' '.join(split_current_entry_data[1:])
+            gene_dict[current_entry_name] = (current_entry_pathway_id, current_entry_pathway_name)
+        elif current_entry_name in ('PATHWAY', 'DISEASE'):
             split_current_entry_data = current_entry_data.split()
             current_entry_pathway_id = split_current_entry_data[0]
             current_entry_pathway_name = ' '.join(split_current_entry_data[1:])
@@ -197,7 +202,12 @@ def parse_organism(gene_raw_record):
                 gene_dict[current_entry_name] = [(current_entry_pathway_id, current_entry_pathway_name)]
             else:
                 gene_dict[current_entry_name].append((current_entry_pathway_id, current_entry_pathway_name))
-        elif current_entry_name in ('MOTIF', 'DBLINKS', 'STRUCTURE'):
+        elif current_entry_name == 'CLASS':
+            if current_entry_name in gene_dict:
+                gene_dict[current_entry_name].append(current_entry_data)
+            else:
+                gene_dict[current_entry_name] = [current_entry_data]
+        elif current_entry_name in ('DRUG_TARGET', 'MOTIF', 'DBLINKS', 'STRUCTURE'):
             split_current_entry_data = current_entry_data.split(': ')
             if current_entry_name not in gene_dict:
                 gene_dict[current_entry_name] = dict()
@@ -214,11 +224,14 @@ def parse_organism(gene_raw_record):
 
 
 # Getting KEGG records from a flat file
-def get_from_kegg_flat_file(file_loc, list_of_ids, parser=parse_ko):
+def get_from_kegg_flat_file(file_loc, list_of_ids=None, parser=parse_ko):
     record_list = list()
     for entry in open(file_loc).read().split('///')[:-1]:
         record = parser(entry)
-        if record['ENTRY'] in list_of_ids:
+        if list_of_ids is not None:
+            if record['ENTRY'] in list_of_ids:
+                record_list.append(record)
+        else:
             record_list.append(record)
     return record_list
 
