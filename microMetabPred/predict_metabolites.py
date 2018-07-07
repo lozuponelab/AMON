@@ -10,9 +10,12 @@ from os import path
 from statsmodels.sandbox.stats.multicomp import multipletests
 import numpy as np
 from biom import load_table
+import seaborn as sns
 
 from microMetabPred.parse_KEGG import parse_ko, parse_rn, parse_co, parse_pathway, get_kegg_record_dict
 
+
+sns.set()
 
 def p_adjust(pvalues, method='fdr_bh'):
     res = multipletests(pvalues, method=method)
@@ -48,7 +51,7 @@ def get_products_from_rns(list_of_rns, rn_dict):
 
 
 def make_compound_origin_table(cos_produced, other_cos_produced=None, cos_measured=None):
-    table = pd.DataFrame(index=['microbe', 'host', 'detected'])
+    table = pd.DataFrame(index=['microbes', 'host', 'detected'])
     if other_cos_produced is None:
         other_cos_produced = []
     if cos_measured is None:
@@ -64,14 +67,14 @@ def make_compound_origin_table(cos_produced, other_cos_produced=None, cos_measur
 def make_venn(bac_cos, host_cos=None, measured_cos=None, output_loc=None):
     if host_cos is not None and measured_cos is None:
         venn = venn2((set(bac_cos), set(host_cos)),
-                     ("Compounds predicted produced\nby bacteria", "Compounds predicted produced\nby host"),)
+                     ("Compounds predicted\nproduced by bacteria", "Compounds predicted\nproduced by host"),)
     elif host_cos is None and measured_cos is not None:
         venn = venn2((set(bac_cos), set(host_cos)),
-                     ("Compounds predicted produced\nby bacteria", "Compounds measured"))
+                     ("Compounds predicted\nproduced by bacteria", "Compounds measured"))
     else:
         venn = venn3((set(measured_cos), set(bac_cos), set(host_cos)),
-                     ("Compounds measured", "Compounds predicted produced\nby bacteria",
-                      "Compounds predicted produced\nby host"))
+                     ("Compounds measured", "Compounds predicted\nproduced by bacteria",
+                      "Compounds predicted\nproduced by host"))
     if output_loc is not None:
         plt.savefig(output_loc, bbox_inches='tight', dpi=300)
 
@@ -128,6 +131,8 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
     if other_kos_loc is not None:
         other_rns = get_rns_from_kos(other_kos, ko_dict)
         all_rns = all_rns + other_rns
+
+    # Get reactions from KEGG and pull kos produced
     rn_dict = get_kegg_record_dict(set(all_rns), parse_rn, rn_file_loc)
     cos_produced = get_products_from_rns(rns, rn_dict)
     if other_kos_loc is not None:
@@ -145,21 +150,27 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
     if compounds_loc is not None or other_kos_loc is not None:
         make_venn(cos_produced, other_cos_produced, cos_measured, path.join(output_dir, 'venn.png'))
 
-    # calculate enrichment
+    # Get set of compounds for enrichment analysis
     if detected_only:
-        cos_produced = cos_produced & cos_measured
+        cos_produced = set(cos_produced) & set(cos_measured)
         if other_cos_produced is not None:
-            other_cos_produced = other_cos_produced & cos_measured
+            other_cos_produced = set(other_cos_produced) & set(cos_measured)
         all_cos = cos_measured
     else:
         if other_cos_produced is None:
             all_cos = cos_produced
         else:
             all_cos = cos_produced & other_cos_produced
+
+    # Get compound data from kegg
     co_dict = get_kegg_record_dict(all_cos, parse_co, co_file_loc)
     all_pathways = get_pathways_from_cos(co_dict)
+
+    # Get pathway info from pathways in compounds
     pathway_dict = get_kegg_record_dict(all_pathways, parse_pathway, pathway_file_loc)
     pathway_to_compound_dict = get_pathway_to_co_dict(pathway_dict, no_glycan=False)
+
+    # calculate enrichment
     enrichment_table = calculate_enrichment(cos_produced, pathway_to_compound_dict)
     enrichment_table.to_csv(path.join(output_dir, 'bacteria_enrichment.tsv'), sep='\t')
     if other_cos_produced is not None:
