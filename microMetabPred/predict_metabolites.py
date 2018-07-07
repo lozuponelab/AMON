@@ -1,5 +1,6 @@
 # TODO: make remove measured cos w/o reaction option
-# TODO: make read in biom table of kos or cos an option
+# TODO: make heatmap for significance of pathway enrichments
+# TODO: test running with cos measured
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -8,6 +9,7 @@ from scipy.stats import hypergeom
 from os import path
 from statsmodels.sandbox.stats.multicomp import multipletests
 import numpy as np
+from biom import load_table
 
 from microMetabPred.parse_KEGG import parse_ko, parse_rn, parse_co, parse_pathway, get_kegg_record_dict
 
@@ -17,8 +19,16 @@ def p_adjust(pvalues, method='fdr_bh'):
     return np.array(res[1], dtype=float)
 
 
-def parse_whitespace_sep(file_loc):
-    return [i.strip() for i in open(file_loc).readlines()]
+def read_in_ids(file_loc):
+    """
+    Read in kos from whitespace separated list (.txt), tsv with KOs as row headers (.tsv/.csv) or biom table (.biom).
+    """
+    if file_loc.endswith('.txt'):
+        return [i.strip() for i in open(file_loc).read().split()]
+    elif file_loc.endswith('.tsv') or file_loc.endswith('.csv'):
+        return list(pd.read_table(file_loc, index_col=0).columns)
+    elif file_loc.endswith('.biom'):
+        return list(load_table(file_loc).ids(axis='observation'))
 
 
 def get_rns_from_kos(list_of_kos, ko_dict):
@@ -105,10 +115,10 @@ def calculate_enrichment(cos, co_pathway_dict, min_pathway_size=3):
 def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_only=False,
          ko_file_loc=None, rn_file_loc=None, co_file_loc=None, pathway_file_loc=None):
     # read in all kos and get records
-    kos = parse_whitespace_sep(kos_loc)
+    kos = read_in_ids(kos_loc)
     all_kos = kos
     if other_kos_loc is not None:
-        other_kos = parse_whitespace_sep(other_kos_loc)
+        other_kos = read_in_ids(other_kos_loc)
         all_kos = all_kos + other_kos
     ko_dict = get_kegg_record_dict(set(all_kos), parse_ko, ko_file_loc)
 
@@ -127,7 +137,7 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
 
     # read in compounds that were measured if available
     if compounds_loc is not None:
-        cos_measured = parse_whitespace_sep(compounds_loc)
+        cos_measured = read_in_ids(compounds_loc)
     else:
         cos_measured = None
     origin_table = make_compound_origin_table(cos_produced, other_cos_produced, cos_measured)
