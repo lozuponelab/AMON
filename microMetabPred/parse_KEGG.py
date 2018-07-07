@@ -1,6 +1,7 @@
 import asyncio
 import aiohttp
 
+
 # Parsers
 def parse_ko(ko_raw_record):
     ko_dict = dict()
@@ -62,8 +63,11 @@ def parse_rn(rn_raw_record):
             equation_split = current_entry_data.split(' <=> ')
             if len(equation_split) != 2:
                 raise ValueError("Equation does not have two parts: %s" % current_entry_data)
-            rn_dict[current_entry_name] = [(equation_split[0].strip().split(' + ')),
-                                           (equation_split[1].strip().split(' + '))]
+            reactants = equation_split[0].strip().split(' + ')
+            reactants = [reactant.strip().split()[-1][:6] for reactant in reactants]
+            products = equation_split[1].strip().split(' + ')
+            products = [product.strip().split()[-1][:6] for product in products]
+            rn_dict[current_entry_name] = [reactants, products]
         elif current_entry_name in ('RCLASS', 'PATHWAY', 'ORTHOLOGY', 'MODULE'):
             split_current_entry_data = current_entry_data.split()
             current_entry_pathway_id = split_current_entry_data[0]

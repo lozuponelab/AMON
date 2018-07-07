@@ -52,7 +52,7 @@ def rn_raw_record():
     return "ENTRY       R00000                      Reaction\n" \
            "NAME        a fake reaction\n" \
            "DEFINITION  reactant 1 + reactant 2 <=> product 1 + product 2\n" \
-           "EQUATION    C00000 + C00001 <=> C00002 + C00003\n" \
+           "EQUATION    C00000(m+n) + 3 C00001 <=> C00002(m) + (n+1) C00003\n" \
            "ENZYME      0.0.0.0\n" \
            "DBLINKS     HSA: hsa00000\n"
 

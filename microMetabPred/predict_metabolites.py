@@ -29,7 +29,6 @@ def get_rns_from_kos(list_of_kos, ko_dict):
             if 'RN' in ko_record['DBLINKS']:
                 reaction_set += ko_record['DBLINKS']['RN']
         except KeyError:
-            # print('KO %s does not exist in KEGG?' % ko)
             pass
     return reaction_set
 
@@ -44,7 +43,7 @@ def make_compound_origin_table(cos_produced, other_cos_produced=None, cos_measur
         other_cos_produced = []
     if cos_measured is None:
         cos_measured = []
-    for co in set(cos_produced) ^ set(other_cos_produced) ^ set(cos_measured):
+    for co in set(cos_produced) | set(other_cos_produced) | set(cos_measured):
         table[co] = [co in cos_produced, co in other_cos_produced, co in cos_measured]
     table = table.transpose()
     # get rid of any all false columns
@@ -55,16 +54,16 @@ def make_compound_origin_table(cos_produced, other_cos_produced=None, cos_measur
 def make_venn(bac_cos, host_cos=None, measured_cos=None, output_loc=None):
     if host_cos is not None and measured_cos is None:
         venn = venn2((set(bac_cos), set(host_cos)),
-                     ("Compounds predicted produced by bacteria", "Compounds predicted produced by host"))
-    if host_cos is None and measured_cos is not None:
+                     ("Compounds predicted produced\nby bacteria", "Compounds predicted produced\nby host"),)
+    elif host_cos is None and measured_cos is not None:
         venn = venn2((set(bac_cos), set(host_cos)),
-                     ("Compounds predicted produced by bacteria", "Compounds measured"))
+                     ("Compounds predicted produced\nby bacteria", "Compounds measured"))
     else:
         venn = venn3((set(measured_cos), set(bac_cos), set(host_cos)),
-                     ("Compounds measured", "Compounds predicted produced by bacteria",
-                      "Compounds predicted produced by host"))
+                     ("Compounds measured", "Compounds predicted produced\nby bacteria",
+                      "Compounds predicted produced\nby host"))
     if output_loc is not None:
-        plt.savefig(output_loc)
+        plt.savefig(output_loc, bbox_inches='tight', dpi=300)
 
 
 def get_pathways_from_cos(co_dict):
@@ -118,7 +117,7 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
     all_rns = rns
     if other_kos_loc is not None:
         other_rns = get_rns_from_kos(other_kos, ko_dict)
-        all_rns = all_rns + rns
+        all_rns = all_rns + other_rns
     rn_dict = get_kegg_record_dict(set(all_rns), parse_rn, rn_file_loc)
     cos_produced = get_products_from_rns(rns, rn_dict)
     if other_kos_loc is not None:
@@ -155,4 +154,4 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
     enrichment_table.to_csv(path.join(output_dir, 'bacteria_enrichment.tsv'), sep='\t')
     if other_cos_produced is not None:
         other_cos_enrichment_table = calculate_enrichment(other_cos_produced, pathway_to_compound_dict)
-        other_cos_enrichment_table.to_csv(path.join(output_dir, 'host_enrichment'), sep='\t')
+        other_cos_enrichment_table.to_csv(path.join(output_dir, 'host_enrichment.tsv'), sep='\t')
