@@ -1,7 +1,8 @@
 from setuptools import setup, find_packages
+from microMetabPred import __version__ as version
 
 __author__ = 'shafferm'
-__version__ = '0.0.0'
+__version__ = version
 
 setup(
       name="microMetabPred",
