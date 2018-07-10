@@ -17,6 +17,7 @@ from microMetabPred.parse_KEGG import parse_ko, parse_rn, parse_co, parse_pathwa
 
 sns.set()
 
+
 def p_adjust(pvalues, method='fdr_bh'):
     res = multipletests(pvalues, method=method)
     return np.array(res[1], dtype=float)
@@ -66,14 +67,14 @@ def make_compound_origin_table(cos_produced, other_cos_produced=None, cos_measur
 
 def make_venn(bac_cos, host_cos=None, measured_cos=None, output_loc=None):
     if host_cos is not None and measured_cos is None:
-        venn = venn2((set(bac_cos), set(host_cos)),
-                     ("Compounds predicted\nproduced by bacteria", "Compounds predicted\nproduced by host"),)
+        _ = venn2((set(bac_cos), set(host_cos)),
+                  ("Compounds predicted\nproduced by bacteria", "Compounds predicted\nproduced by host"),)
     elif host_cos is None and measured_cos is not None:
-        venn = venn2((set(bac_cos), set(host_cos)),
-                     ("Compounds predicted\nproduced by bacteria", "Compounds measured"))
+        _ = venn2((set(bac_cos), set(host_cos)),
+                  ("Compounds predicted\nproduced by bacteria", "Compounds measured"))
     else:
-        venn = venn3((set(measured_cos), set(bac_cos), set(host_cos)),
-                     ("Compounds measured", "Compounds predicted\nproduced by bacteria",
+        _ = venn3((set(measured_cos), set(bac_cos), set(host_cos)),
+                  ("Compounds measured", "Compounds predicted\nproduced by bacteria",
                       "Compounds predicted\nproduced by host"))
     if output_loc is not None:
         plt.savefig(output_loc, bbox_inches='tight', dpi=300)
@@ -92,10 +93,10 @@ def get_pathway_to_co_dict(pathway_dict, no_drug=True, no_glycan=True):
                           for pathway_record in pathway_dict.values() if 'COMPOUND' in pathway_record}
     if no_drug:
         pathway_to_co_dict = {pathway: [co for co in cos if not co.startswith('D')]
-                           for pathway, cos in pathway_to_co_dict.items()}
+                              for pathway, cos in pathway_to_co_dict.items()}
     if no_glycan:
         pathway_to_co_dict = {pathway: [co for co in cos if not co.startswith('G')]
-                           for pathway, cos in pathway_to_co_dict.items()}
+                              for pathway, cos in pathway_to_co_dict.items()}
     return pathway_to_co_dict
 
 
@@ -125,8 +126,8 @@ def make_enrichment_clustermap(microbe_enrichment_p, host_enrichment_p, output_d
     if log:
         enrichment_p_df = np.log(enrichment_p_df)
     g = sns.clustermap(enrichment_p_df, col_cluster=False, figsize=(2, 12), cmap="Blues_r", method="average")
-    junk = plt.setp(g.ax_heatmap.get_xticklabels(), rotation=340, fontsize=12, ha="left")
-    junk = plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0, fontsize=12)
+    _ = plt.setp(g.ax_heatmap.get_xticklabels(), rotation=340, fontsize=12, ha="left")
+    _ = plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0, fontsize=12)
     plt.savefig(path.join(output_dir, 'enrichment_heatmap.png'), dpi=500, bbox_inches='tight')
 
 
@@ -210,12 +211,6 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
     # Get pathway info from pathways in compounds
     pathway_dict = get_kegg_record_dict(all_pathways, parse_pathway, pathway_file_loc)
     pathway_to_compound_dict = get_pathway_to_co_dict(pathway_dict, no_glycan=False)
-
-    # # Optionally remove compounds w/o reaction data because we can't know anything about their human or bacteria origin
-    # if rxn_compounds_only:
-    #     for pathway, record in pathway_dict:
-    #         if 'COMPOUND' in record:
-    #             pass
 
     # calculate enrichment
     pathway_enrichment_df = calculate_enrichment(cos_produced, pathway_to_compound_dict)

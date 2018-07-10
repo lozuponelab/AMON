@@ -10,7 +10,7 @@ dependencies:
   - seaborn
   - statsmodels
   - biom-format
-  - requests
-  - tqdm
+  - aiohttp
+  - pytest
   - pip:
     - matplotlib-venn

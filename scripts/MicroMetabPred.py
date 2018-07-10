@@ -5,7 +5,9 @@ from microMetabPred.predict_metabolites import main
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('-i', '--input', help="white space separated list of KEGG KO's from bacterial community",
+    parser.add_argument('-i', '--input', help="KEGG KO's from bacterial community in the form of a white space "
+                                              "separated list, a tsv or csv with KO ids as column names or a biom file "
+                                              "with KO ids as observations",
                         required=True)
     parser.add_argument('-o', '--output_dir', help="directory to store output", required=True)
     parser.add_argument('--detected_compounds', help="list of compounds detected via metabolomics")

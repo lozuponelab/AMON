@@ -55,7 +55,7 @@ def parse_rn(rn_raw_record):
         current_entry_data = line[12:].strip()
         if current_entry_name == 'ENTRY':
             rn_dict[current_entry_name] = current_entry_data.split()[0]
-        elif current_entry_name in ('NAME', 'DEFINITION', 'REMARK','COMMENT', 'ENZYME'):
+        elif current_entry_name in ('NAME', 'DEFINITION', 'REMARK', 'COMMENT', 'ENZYME'):
             rn_dict[current_entry_name] = current_entry_data
         elif current_entry_name == 'RPAIR':
             rn_dict[current_entry_name] = current_entry_data.split()
