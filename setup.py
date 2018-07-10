@@ -5,10 +5,10 @@ __author__ = 'shafferm'
 __version__ = version
 
 setup(
-      name="microMetabPred",
+      name="MicroMetabPred",
       version=__version__,
       setup_requires=['pytest-runner'],
-      test_require=['pytest'],
+      tests_require=['pytest'],
       install_requires=['scipy', 'biom-format', 'pandas', 'matplotlib', 'statsmodels', 'numpy', 'aiohttp', 'seaborn',
                         'matplotlib-venn'],
       scripts=['scripts/MicroMetabPred.py', 'scripts/extract_ko_genome_from_organism.py'],
