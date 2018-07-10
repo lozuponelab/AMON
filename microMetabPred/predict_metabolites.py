@@ -99,7 +99,7 @@ def get_pathway_to_co_dict(pathway_dict, no_drug=True, no_glycan=True):
     return pathway_to_co_dict
 
 
-def calculate_enrichment(cos, co_pathway_dict, min_pathway_size=3):
+def calculate_enrichment(cos, co_pathway_dict, min_pathway_size=10):
     all_cos = set([co for co_list in co_pathway_dict.values() for co in co_list])
     pathway_names = list()
     pathway_data = list()
@@ -110,12 +110,27 @@ def calculate_enrichment(cos, co_pathway_dict, min_pathway_size=3):
             prob = hypergeom.sf(len(overlap), len(all_cos), len(pathway_present), len(set(cos)))
             pathway_names.append(pathway)
             pathway_data.append([len(pathway_present), len(overlap), prob])
-    enrichment_table = pd.DataFrame(pathway_data, index=pathway_names, columns=["pathway size", "overlap", "probability"])
+    enrichment_table = pd.DataFrame(pathway_data, index=pathway_names,
+                                    columns=["pathway size", "overlap", "probability"])
     enrichment_table['adjusted probability'] = p_adjust(enrichment_table.probability)
     return enrichment_table.sort_values('adjusted probability')
 
 
-def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_only=False,
+def make_enrichment_clustermap(microbe_enrichment_p, host_enrichment_p, output_dir, min_p=.2, log=False):
+    enriched_pathways = microbe_enrichment_p.loc[microbe_enrichment_p < min_p].index
+    enriched_pathways = enriched_pathways | host_enrichment_p.loc[host_enrichment_p < min_p].index
+    enrichment_p_df = pd.concat((microbe_enrichment_p, host_enrichment_p), axis=1, sort=True)
+    enrichment_p_df = enrichment_p_df.loc[enriched_pathways]
+    enrichment_p_df.columns = ("Predicted Bacterial Only", "Predicted Human Only")
+    if log:
+        enrichment_p_df = np.log(enrichment_p_df)
+    g = sns.clustermap(enrichment_p_df, col_cluster=False, figsize=(2, 12), cmap="Blues_r", method="average")
+    junk = plt.setp(g.ax_heatmap.get_xticklabels(), rotation=340, fontsize=12, ha="left")
+    junk = plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0, fontsize=12)
+    plt.savefig(path.join(output_dir, 'enrichment_heatmap.png'), dpi=500, bbox_inches='tight')
+
+
+def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_only=False, rxn_compounds_only=False,
          ko_file_loc=None, rn_file_loc=None, co_file_loc=None, pathway_file_loc=None):
     # read in all kos and get records
     kos = read_in_ids(kos_loc)
@@ -123,19 +138,23 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
     if other_kos_loc is not None:
         other_kos = read_in_ids(other_kos_loc)
         all_kos = all_kos + other_kos
+    else:
+        other_kos = None
     ko_dict = get_kegg_record_dict(set(all_kos), parse_ko, ko_file_loc)
 
     # get all reactions from kos
     rns = get_rns_from_kos(kos, ko_dict)
     all_rns = rns
-    if other_kos_loc is not None:
+    if other_kos is not None:
         other_rns = get_rns_from_kos(other_kos, ko_dict)
         all_rns = all_rns + other_rns
+    else:
+        other_rns = None
 
     # Get reactions from KEGG and pull kos produced
     rn_dict = get_kegg_record_dict(set(all_rns), parse_rn, rn_file_loc)
     cos_produced = get_products_from_rns(rns, rn_dict)
-    if other_kos_loc is not None:
+    if other_rns is not None:
         other_cos_produced = get_products_from_rns(other_rns, rn_dict)
     else:
         other_cos_produced = None
@@ -147,32 +166,67 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
         cos_measured = None
     origin_table = make_compound_origin_table(cos_produced, other_cos_produced, cos_measured)
     origin_table.to_csv(path.join(output_dir, 'origin_table.tsv'), sep='\t')
-    if compounds_loc is not None or other_kos_loc is not None:
-        make_venn(cos_produced, other_cos_produced, cos_measured, path.join(output_dir, 'venn.png'))
 
-    # Get set of compounds for enrichment analysis
+    # Get set of compounds
     if detected_only:
-        cos_produced = set(cos_produced) & set(cos_measured)
-        if other_cos_produced is not None:
-            other_cos_produced = set(other_cos_produced) & set(cos_measured)
-        all_cos = cos_measured
+        if other_kos_loc is None:
+            all_cos = set(cos_measured) | cos_produced
+        else:
+            all_cos = set(cos_measured) | cos_produced | other_cos_produced
     else:
         if other_cos_produced is None:
             all_cos = cos_produced
         else:
-            all_cos = cos_produced & other_cos_produced
+            all_cos = cos_produced | other_cos_produced
 
     # Get compound data from kegg
     co_dict = get_kegg_record_dict(all_cos, parse_co, co_file_loc)
     all_pathways = get_pathways_from_cos(co_dict)
 
+    # remove compounds without reactions if required
+    if rxn_compounds_only:
+        cos_with_rxn = list()
+        for compound, record in co_dict.items():
+            if 'REACTION' in record:
+                cos_with_rxn.append(compound)
+        cos_measured = set(cos_measured) & set(cos_with_rxn)
+
+    # Make venn diagram
+    if compounds_loc is not None or other_kos_loc is not None:
+        make_venn(cos_produced, other_cos_produced, cos_measured, path.join(output_dir, 'venn.png'))
+
+    # Filter compounds down to only cos measured for cos produced and other cos produced
+    if detected_only:
+        cos_produced = set(cos_produced) & set(cos_measured)
+        if other_cos_produced is not None:
+            other_cos_produced = set(other_cos_produced) & set(cos_measured)
+
+    # find compounds unique to microbes and to host if host included
+    if other_cos_produced is not None:
+        original_cos_produced = cos_produced
+        cos_produced = cos_produced - other_cos_produced
+        other_cos_produced = other_cos_produced - original_cos_produced
+
     # Get pathway info from pathways in compounds
     pathway_dict = get_kegg_record_dict(all_pathways, parse_pathway, pathway_file_loc)
     pathway_to_compound_dict = get_pathway_to_co_dict(pathway_dict, no_glycan=False)
 
+    # # Optionally remove compounds w/o reaction data because we can't know anything about their human or bacteria origin
+    # if rxn_compounds_only:
+    #     for pathway, record in pathway_dict:
+    #         if 'COMPOUND' in record:
+    #             pass
+
     # calculate enrichment
-    enrichment_table = calculate_enrichment(cos_produced, pathway_to_compound_dict)
-    enrichment_table.to_csv(path.join(output_dir, 'bacteria_enrichment.tsv'), sep='\t')
-    if other_cos_produced is not None:
-        other_cos_enrichment_table = calculate_enrichment(other_cos_produced, pathway_to_compound_dict)
-        other_cos_enrichment_table.to_csv(path.join(output_dir, 'host_enrichment.tsv'), sep='\t')
+    pathway_enrichment_df = calculate_enrichment(cos_produced, pathway_to_compound_dict)
+    pathway_enrichment_df.to_csv(path.join(output_dir, 'bacteria_enrichment.tsv'), sep='\t')
+    if other_kos_loc is not None:
+        other_pathway_enrichment_df = calculate_enrichment(other_cos_produced, pathway_to_compound_dict)
+        other_pathway_enrichment_df.to_csv(path.join(output_dir, 'host_enrichment.tsv'), sep='\t')
+    else:
+        other_pathway_enrichment_df = None
+
+    # plot enrichment
+    if other_pathway_enrichment_df is not None:
+        make_enrichment_clustermap(pathway_enrichment_df['adjusted probability'],
+                                   other_pathway_enrichment_df['adjusted probability'], output_dir)
