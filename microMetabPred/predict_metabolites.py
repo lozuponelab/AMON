@@ -6,7 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib_venn import venn2, venn3
 from scipy.stats import hypergeom
-from os import path
+from os import path, makedirs
 from statsmodels.sandbox.stats.multicomp import multipletests
 import numpy as np
 from biom import load_table
@@ -68,11 +68,13 @@ def make_compound_origin_table(cos_produced, other_cos_produced=None, cos_measur
 
 
 def make_venn(bac_cos, host_cos=None, measured_cos=None, output_loc=None):
+    if host_cos is None and measured_cos is None:
+        raise ValueError("Must give host_cos or measured_cos to make venn diagram")
     if host_cos is not None and measured_cos is None:
         _ = venn2((set(bac_cos), set(host_cos)),
                   ("Compounds predicted\nproduced by bacteria", "Compounds predicted\nproduced by host"),)
     elif host_cos is None and measured_cos is not None:
-        _ = venn2((set(bac_cos), set(host_cos)),
+        _ = venn2((set(bac_cos), set(measured_cos)),
                   ("Compounds predicted\nproduced by bacteria", "Compounds measured"))
     else:
         _ = venn3((set(measured_cos), set(bac_cos), set(host_cos)),
@@ -80,6 +82,8 @@ def make_venn(bac_cos, host_cos=None, measured_cos=None, output_loc=None):
                       "Compounds predicted\nproduced by host"))
     if output_loc is not None:
         plt.savefig(output_loc, bbox_inches='tight', dpi=300)
+    else:
+        plt.show()
 
 
 def get_pathways_from_cos(co_dict):
@@ -167,6 +171,7 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
         cos_measured = read_in_ids(compounds_loc)
     else:
         cos_measured = None
+    makedirs(output_dir)
     origin_table = make_compound_origin_table(cos_produced, other_cos_produced, cos_measured)
     origin_table.to_csv(path.join(output_dir, 'origin_table.tsv'), sep='\t')
 
@@ -210,7 +215,7 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
         other_cos_produced = other_cos_produced - original_cos_produced
 
     # Get pathway info from pathways in compounds
-    all_pathways = get_pathways_from_cos(co_dict)
+    all_pathways = [pathway.replace('map', 'ko') for pathway in get_pathways_from_cos(co_dict)]
     pathway_dict = get_kegg_record_dict(all_pathways, parse_pathway, pathway_file_loc)
     pathway_to_compound_dict = get_pathway_to_co_dict(pathway_dict, no_glycan=False)
 

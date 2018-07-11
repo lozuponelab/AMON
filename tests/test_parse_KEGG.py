@@ -1,4 +1,5 @@
 import pytest
+import asyncio
 
 from microMetabPred.parse_KEGG import get_from_kegg_api, parse_ko, parse_rn, parse_co, parse_pathway, parse_organism
 
@@ -13,13 +14,18 @@ def list_of_rxns():
     return ['R02124', 'R06927']
 
 
-def test_get_from_kegg_kos(list_of_kos):
-    raw_entries = get_from_kegg_api(list_of_kos, parse_ko)
+@pytest.fixture()
+def loop():
+    return asyncio.get_event_loop()
+
+
+def test_get_from_kegg_kos(loop, list_of_kos):
+    raw_entries = get_from_kegg_api(loop, list_of_kos, parse_ko)
     assert len(raw_entries) == 2
 
 
-def test_get_from_kegg_rxns(list_of_rxns):
-    raw_entries = get_from_kegg_api(list_of_rxns, parse_rn)
+def test_get_from_kegg_rxns(loop, list_of_rxns):
+    raw_entries = get_from_kegg_api(loop, list_of_rxns, parse_rn)
     assert len(raw_entries) == 2
 
 

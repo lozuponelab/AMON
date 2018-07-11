@@ -265,15 +265,15 @@ async def kegg_download_manager(loop, list_of_ids):
     return [raw_record for raw_records in results for raw_record in raw_records.split('///')[:-1]]
 
 
-def get_from_kegg_api(list_of_ids, parser):
-    loop = asyncio.get_event_loop()
+def get_from_kegg_api(loop, list_of_ids, parser):
     return [parser(raw_record) for raw_record in loop.run_until_complete(kegg_download_manager(loop, list_of_ids))]
 
 
 # Getting a dictionary of kegg records from either the KEGG API or file files
 def get_kegg_record_dict(list_of_ids, parser, records_file_loc=None, verbose=False):
     if records_file_loc is None:
-        records = get_from_kegg_api(list_of_ids, parser)
+        loop = asyncio.get_event_loop()
+        records = get_from_kegg_api(loop, list_of_ids, parser)
     else:
         records = get_from_kegg_flat_file(records_file_loc, list_of_ids, parser)
     if verbose:

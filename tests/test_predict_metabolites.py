@@ -2,9 +2,11 @@ import pytest
 from numpy.testing import assert_allclose
 import pandas as pd
 from biom.table import Table
+from os.path import isfile
 
 from microMetabPred.predict_metabolites import p_adjust, read_in_ids, make_compound_origin_table, get_rns_from_kos, \
-                                               get_products_from_rns, get_pathways_from_cos, get_pathway_to_co_dict
+                                               get_products_from_rns, get_pathways_from_cos, get_pathway_to_co_dict, \
+                                               make_venn, calculate_enrichment, make_enrichment_clustermap
 
 
 @pytest.fixture()
@@ -68,7 +70,6 @@ def ids_tsv(tmpdir_factory, list_of_kos):
 
 def test_read_in_ids_tsv(ids_tsv, list_of_kos):
     ids = read_in_ids(ids_tsv)
-    print(ids)
     assert len(ids) == 3
     assert tuple(ids) == tuple(list_of_kos)
 
@@ -87,9 +88,13 @@ def ids_biom(tmpdir_factory, list_of_kos):
 
 def test_read_in_ids_biom(ids_biom, list_of_kos):
     ids = read_in_ids(ids_biom)
-    print(ids)
     assert len(ids) == 3
     assert tuple(ids) == tuple(list_of_kos)
+
+
+def test_read_in_ids_bad_ending():
+    with pytest.raises(ValueError):
+        ids = read_in_ids('fake.xkcd')
 
 
 @pytest.fixture()
@@ -153,6 +158,21 @@ def test_make_compound_origin_table(list_of_cos, list_of_other_cos, list_of_meas
     table4 = make_compound_origin_table(list_of_cos, list_of_other_cos, list_of_measured_cos)
     assert table4.shape == (6, 3)
     assert tuple(table4.sum(axis=0)) == (3, 3, 3)
+
+
+def test_make_venn(list_of_cos, list_of_other_cos, list_of_measured_cos, tmpdir):
+    with pytest.raises(ValueError):
+        make_venn(list_of_cos)
+    p = tmpdir.mkdir('test_venn')
+    b_h_venn_path = str(p.join('b_h_venn.png'))
+    make_venn(list_of_cos, host_cos=list_of_other_cos, output_loc=b_h_venn_path)
+    assert isfile(b_h_venn_path)
+    b_m_venn_path = str(p.join('b_m_venn.png'))
+    make_venn(list_of_cos, measured_cos=list_of_measured_cos, output_loc=b_m_venn_path)
+    assert isfile(b_m_venn_path)
+    b_h_m_venn_path = str(p.join('b_m_h_venn.png'))
+    make_venn(list_of_cos, list_of_other_cos, list_of_measured_cos, output_loc=b_h_m_venn_path)
+    assert isfile(b_h_m_venn_path)
 
 
 @pytest.fixture()
