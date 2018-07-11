@@ -93,6 +93,37 @@ def test_parse_co(co_raw_record):
 
 
 @pytest.fixture()
+def gl_raw_record():
+    return "ENTRY       G00000                      Glycan\n" \
+           "COMPOSITION (GlcA)2 (GlcNAc)2 (S)2\n" \
+           "MASS        1000\n" \
+           "REACTION    R00000 R00001\n" \
+           "PATHWAY     map00000  Fake pathway\n" \
+           "            map01100  Metabolic pathways\n" \
+           "MODULE      M00000  A fake module\n" \
+           "NODE        6" \
+           "            1   GlcA     13.6  -2.1\n" \
+           "            2   GlcNAc    4.6  -2.1\n" \
+           "            3   S        -1.4   1.9\n" \
+           "            4   GlcA     -4.4  -2.1\n" \
+           "            5   S       -10.4   1.9\n" \
+           "            6   GlcNAc  -13.4  -2.1\n" \
+           "EDGE        5\n" \
+           "            1     2:a1    1:4  \n" \
+           "            2     3       2:6  \n" \
+           "            3     4:b1    2:4  \n" \
+           "            4     5       4:2  \n" \
+           "            5     6:a1    4:4  \n"
+
+
+def test_parse_gl(gl_raw_record):
+    co_record = parse_co(gl_raw_record)
+    assert len(co_record) == 6
+    assert len(co_record['REACTION']) == 2
+    assert co_record['PATHWAY'][0] == ('map00000', 'Fake pathway')
+
+
+@pytest.fixture()
 def pathway_raw_record():
     return "ENTRY       ko00000                      Pathway\n" \
            "NAME        a fake pathway\n" \

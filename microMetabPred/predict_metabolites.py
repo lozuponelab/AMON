@@ -134,7 +134,7 @@ def make_enrichment_clustermap(microbe_enrichment_p, host_enrichment_p, output_d
     enriched_pathways = enriched_pathways | host_enrichment_p.loc[host_enrichment_p < min_p].index
     enrichment_p_df = pd.concat((microbe_enrichment_p, host_enrichment_p), axis=1, sort=True)
     enrichment_p_df = enrichment_p_df.loc[enriched_pathways]
-    enrichment_p_df.columns = ("Predicted Bacterial Only", "Predicted Human Only")
+    enrichment_p_df.columns = ("Predicted Bacterial Only", "Predicted Host Only")
     if log:
         enrichment_p_df = np.log(enrichment_p_df)
     g = sns.clustermap(enrichment_p_df, col_cluster=False, figsize=(2, 12), cmap="Blues_r", method="average")

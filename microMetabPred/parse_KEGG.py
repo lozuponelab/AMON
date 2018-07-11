@@ -103,7 +103,7 @@ def parse_co(co_raw_record):
                 co_dict[current_entry_name] = current_entry_data
             else:
                 co_dict[current_entry_name] += ' %s' % current_entry_data
-        elif current_entry_name in ('FORMULA', 'EXACT_MASS', 'MOL_WEIGHT', 'REMARK', 'COMMENT'):
+        elif current_entry_name in ('FORMULA', 'EXACT_MASS', 'MOL_WEIGHT', 'REMARK', 'COMMENT', 'COMPOSITION', 'MASS'):
             co_dict[current_entry_name] = current_entry_data
         elif current_entry_name in ('REACTION', 'ENZYME', 'SEQUENCE'):
             if current_entry_name in co_dict:
@@ -120,6 +120,9 @@ def parse_co(co_raw_record):
                 co_dict[current_entry_name].append((current_entry_pathway_id, current_entry_pathway_name))
         # Structural information we are currently ignoring
         elif current_entry_name in ('BRITE', 'ATOM', 'BOND', 'BRACKET', 'ORIGINAL', 'REPEAT'):
+            pass
+        # Glycan structal information we are currently ignoring
+        elif current_entry_name in ('NODE', 'EDGE'):
             pass
         # Protein information we are currently ignoring
         elif current_entry_name in ('SEQUENCE', 'GENE', 'ORGANISM'):
