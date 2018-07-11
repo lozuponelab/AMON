@@ -30,9 +30,11 @@ def read_in_ids(file_loc):
     if file_loc.endswith('.txt'):
         return [i.strip() for i in open(file_loc).read().split()]
     elif file_loc.endswith('.tsv') or file_loc.endswith('.csv'):
-        return list(pd.read_table(file_loc, index_col=0).columns)
+        return list(pd.read_table(file_loc, sep=None, index_col=0).columns)
     elif file_loc.endswith('.biom'):
         return list(load_table(file_loc).ids(axis='observation'))
+    else:
+        raise ValueError('Input file %s does not have a valid file ending.')
 
 
 def get_rns_from_kos(list_of_kos, ko_dict):
@@ -85,7 +87,7 @@ def get_pathways_from_cos(co_dict):
     for co_record in co_dict.values():
         if 'PATHWAY' in co_record:
             pathway_list += [pathway[0] for pathway in co_record['PATHWAY']]
-    return pathway_list
+    return set(pathway_list)
 
 
 def get_pathway_to_co_dict(pathway_dict, no_drug=True, no_glycan=True):
@@ -182,7 +184,6 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
 
     # Get compound data from kegg
     co_dict = get_kegg_record_dict(all_cos, parse_co, co_file_loc)
-    all_pathways = get_pathways_from_cos(co_dict)
 
     # remove compounds without reactions if required
     if rxn_compounds_only:
@@ -209,6 +210,7 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
         other_cos_produced = other_cos_produced - original_cos_produced
 
     # Get pathway info from pathways in compounds
+    all_pathways = get_pathways_from_cos(co_dict)
     pathway_dict = get_kegg_record_dict(all_pathways, parse_pathway, pathway_file_loc)
     pathway_to_compound_dict = get_pathway_to_co_dict(pathway_dict, no_glycan=False)
 
