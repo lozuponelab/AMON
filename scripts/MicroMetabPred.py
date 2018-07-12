@@ -7,11 +7,11 @@ if __name__ == '__main__':
 
     parser.add_argument('-i', '--input', help="KEGG KO's from bacterial community in the form of a white space "
                                               "separated list, a tsv or csv with KO ids as column names or a biom file "
-                                              "with KO ids as observations",
-                        required=True)
+                                              "with KO ids as observations", required=True)
     parser.add_argument('-o', '--output_dir', help="directory to store output", required=True)
     parser.add_argument('--detected_compounds', help="list of compounds detected via metabolomics")
     parser.add_argument('--host_kos', help="white space separated list of KEGG KO's from host or other environment")
+
     parser.add_argument('--detected_only', help="only use detected compounds in enrichment analysis",
                         action='store_true', default=False)
     parser.add_argument('--rn_compound_only', help="only use compounds with associated reactions", action='store_true',

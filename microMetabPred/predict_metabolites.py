@@ -129,7 +129,7 @@ def calculate_enrichment(cos, co_pathway_dict, min_pathway_size=10):
     return enrichment_table.sort_values('adjusted probability')
 
 
-def make_enrichment_clustermap(microbe_enrichment_p, host_enrichment_p, output_dir, min_p=.2, log=False):
+def make_enrichment_clustermap(microbe_enrichment_p, host_enrichment_p, output_loc, min_p=.2, log=False):
     enriched_pathways = microbe_enrichment_p.loc[microbe_enrichment_p < min_p].index
     enriched_pathways = enriched_pathways | host_enrichment_p.loc[host_enrichment_p < min_p].index
     enrichment_p_df = pd.concat((microbe_enrichment_p, host_enrichment_p), axis=1, sort=True)
@@ -140,7 +140,7 @@ def make_enrichment_clustermap(microbe_enrichment_p, host_enrichment_p, output_d
     g = sns.clustermap(enrichment_p_df, col_cluster=False, figsize=(2, 12), cmap="Blues_r", method="average")
     _ = plt.setp(g.ax_heatmap.get_xticklabels(), rotation=340, fontsize=12, ha="left")
     _ = plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0, fontsize=12)
-    plt.savefig(path.join(output_dir, 'enrichment_heatmap.png'), dpi=500, bbox_inches='tight')
+    plt.savefig(output_loc, dpi=500, bbox_inches='tight')
 
 
 def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_only=False, rxn_compounds_only=False,
@@ -163,9 +163,9 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
         all_rns = all_rns + other_rns
     else:
         other_rns = None
+    rn_dict = get_kegg_record_dict(set(all_rns), parse_rn, rn_file_loc)
 
     # Get reactions from KEGG and pull kos produced
-    rn_dict = get_kegg_record_dict(set(all_rns), parse_rn, rn_file_loc)
     cos_produced = get_products_from_rns(rns, rn_dict)
     if other_rns is not None:
         other_cos_produced = get_products_from_rns(other_rns, rn_dict)
@@ -237,4 +237,5 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
     # plot enrichment
     if other_pathway_enrichment_df is not None:
         make_enrichment_clustermap(pathway_enrichment_df['adjusted probability'],
-                                   other_pathway_enrichment_df['adjusted probability'], output_dir)
+                                   other_pathway_enrichment_df['adjusted probability'],
+                                   path.join(output_dir, 'enrichment_heatmap.png'))

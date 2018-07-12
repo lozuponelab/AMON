@@ -201,3 +201,33 @@ def test_get_pathway_to_co_dict(pathway_dict):
     assert len(pathway_to_co_dict) == 2
     assert tuple(pathway_to_co_dict['One fake pathway']) == ('C00001', 'C00002')
     assert tuple(pathway_to_co_dict['Another fake pathway']) == ('C00001', 'C00005', 'C00003', 'C00007')
+
+
+@pytest.fixture()
+def pathway_co_dict():
+    return {'one fake pathway': ('C00002', 'C00004', 'C00006'),
+            'two fake pathway': ('C00001', 'C00002', 'C00005'),
+            'three fake pathway': ('C00001', 'C00004', 'C00006')}
+
+
+def test_calculate_enrichment(list_of_cos, pathway_co_dict):
+    enrichment = calculate_enrichment(list_of_cos, pathway_co_dict, min_pathway_size=0)
+    assert enrichment.shape == (3, 4)
+    assert tuple(enrichment.index) == ('two fake pathway', 'one fake pathway', 'three fake pathway')
+
+
+@pytest.fixture()
+def p_values():
+    return pd.Series((.0000005, .05, .5), index=('two fake pathway', 'one fake pathway', 'three fake pathway'))
+
+
+@pytest.fixture()
+def host_p_values():
+    return pd.Series((.001, .2, .7), index=('one fake pathway', 'two fake pathway', 'three fake pathway'))
+
+
+def test_make_enrichment_clustermap(p_values, host_p_values, tmpdir):
+    p = tmpdir.mkdir('test_venn')
+    enrichment_path = str(p.join('enrichment_heatmap.png'))
+    make_enrichment_clustermap(p_values, host_p_values, output_loc=enrichment_path)
+    assert isfile(enrichment_path)
