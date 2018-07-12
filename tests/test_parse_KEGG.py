@@ -132,6 +132,7 @@ def pathway_raw_record():
            "PATHWAY_MAP ko00000 a fake pathway\n" \
            "COMPOUND    C00000 A fake compound\n" \
            "            C99999 Another fake compound\n" \
+           "DBLINKS     GO: 0019852 0019572\n" \
            "REFERENCE\n" \
            "  AUTHORS   Michal G.\n" \
            "  TITLE     Biochemical Pathways\n" \
@@ -140,7 +141,7 @@ def pathway_raw_record():
 
 def test_parse_pathway(pathway_raw_record):
     pathway_record = parse_pathway(pathway_raw_record)
-    assert len(pathway_record) == 6
+    assert len(pathway_record) == 7
     assert set([compound[0] for compound in pathway_record['COMPOUND']]) == {'C00000', 'C99999'}
 
 

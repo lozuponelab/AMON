@@ -207,11 +207,12 @@ def test_get_pathway_to_co_dict(pathway_dict):
 def pathway_co_dict():
     return {'one fake pathway': ('C00002', 'C00004', 'C00006'),
             'two fake pathway': ('C00001', 'C00002', 'C00005'),
-            'three fake pathway': ('C00001', 'C00004', 'C00006')}
+            'three fake pathway': ('C00001', 'C00004', 'C00006', 'C00007', 'C00008')}
 
 
 def test_calculate_enrichment(list_of_cos, pathway_co_dict):
     enrichment = calculate_enrichment(list_of_cos, pathway_co_dict, min_pathway_size=0)
+    print(enrichment['adjusted probability'])
     assert enrichment.shape == (3, 4)
     assert tuple(enrichment.index) == ('two fake pathway', 'one fake pathway', 'three fake pathway')
 
