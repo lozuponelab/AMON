@@ -1,5 +1,5 @@
 # MicroMetabPred
-[![PyPI](https://img.shields.io/pypi/v/MicroMetabPred.svg)](https://pypi.python.org/pypi/MicroMetabPred) [![Travis](https://img.shields.io/travis/shafferm/MicroMetabPred.svg)](https://travis-ci.com/shafferm/MicroMetabPred) [![Codacy grade](https://img.shields.io/codacy/grade/44d7474307bf4c62a271a9264c0c213a.svg)](https://www.codacy.com/app/shafferm/MicroMetabPred/dashboard) [![Coveralls](https://img.shields.io/coveralls/shafferm/MicroMetabPred.svg)](https://coveralls.io/github/shafferm/MicroMetabPred)
+[![PyPI](https://img.shields.io/pypi/v/MicroMetabPred.svg)](https://pypi.python.org/pypi/MicroMetabPred) [![Build Status](https://travis-ci.com/shafferm/MicroMetabPred.svg)](https://travis-ci.com/shafferm/MicroMetabPred) [![Codacy grade](https://img.shields.io/codacy/grade/44d7474307bf4c62a271a9264c0c213a.svg)](https://www.codacy.com/app/shafferm/MicroMetabPred/dashboard) [![Coveralls](https://img.shields.io/coveralls/shafferm/MicroMetabPred.svg)](https://coveralls.io/github/shafferm/MicroMetabPred)
 
 A command line tool for predicting the compounds produced by microbes and the host.
 
