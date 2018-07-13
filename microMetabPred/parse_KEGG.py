@@ -282,3 +282,24 @@ def get_kegg_record_dict(list_of_ids, parser, records_file_loc=None, verbose=Fal
     if verbose:
         print("%s records acquired" % len(records))
     return {record['ENTRY']: record for record in records}
+
+
+async def kegg_link_download_manager(loop, link1, link2):
+    async with aiohttp.ClientSession(loop=loop) as session:
+        url = 'http://rest.kegg.jp/link/%s/%s' % (link1, link2)
+        tasks = [download_coroutine(session, url)]
+        results = await asyncio.gather(*tasks)
+    link_dict = dict()
+    if len(results) != 1:
+        raise ValueError('Result had more than one value')
+    for link in results[0].strip().split('\n'):
+        obj_1, obj_2 = link.strip().split()
+        obj_1 = obj_1.strip().split(':')[1]
+        obj_2 = obj_2.strip().split(':')[1]
+        link_dict[obj_2] = obj_1
+    return link_dict
+
+
+def get_kegg_link_from_api(link1, link2):
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(kegg_link_download_manager(loop, link1, link2))

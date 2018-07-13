@@ -2,7 +2,7 @@ import pytest
 import asyncio
 
 from microMetabPred.parse_KEGG import get_from_kegg_api, parse_ko, parse_rn, parse_co, parse_pathway, parse_organism, \
-                                      get_from_kegg_flat_file, get_kegg_record_dict
+                                      get_from_kegg_flat_file, get_kegg_record_dict, get_kegg_link_from_api
 
 
 @pytest.fixture()
@@ -215,3 +215,8 @@ def test_get_kegg_record_dict(list_of_kos, ko_flat_file):
     assert len(ko_dict_web) == 2
     ko_dict_local = get_kegg_record_dict(list_of_kos, parse_ko, ko_flat_file)
     assert len(ko_dict_local) == 1
+
+
+def test_get_kegg_link_from_api():
+    link_dict = get_kegg_link_from_api('ko', 'hsa')
+    assert tuple(link_dict.keys())[0].startswith('K')
