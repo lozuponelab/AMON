@@ -105,7 +105,7 @@ def parse_co(co_raw_record):
                 co_dict[current_entry_name] += ' %s' % current_entry_data
         elif current_entry_name in ('FORMULA', 'EXACT_MASS', 'MOL_WEIGHT', 'REMARK', 'COMMENT', 'COMPOSITION', 'MASS'):
             co_dict[current_entry_name] = current_entry_data
-        elif current_entry_name in ('REACTION', 'ENZYME', 'SEQUENCE'):
+        elif current_entry_name in ('REACTION', 'ENZYME'):
             if current_entry_name in co_dict:
                 co_dict[current_entry_name] += current_entry_data.split()
             else:

@@ -212,7 +212,6 @@ def pathway_co_dict():
 
 def test_calculate_enrichment(list_of_cos, pathway_co_dict):
     enrichment = calculate_enrichment(list_of_cos, pathway_co_dict, min_pathway_size=0)
-    print(enrichment['adjusted probability'])
     assert enrichment.shape == (3, 4)
     assert tuple(enrichment.index) == ('two fake pathway', 'one fake pathway', 'three fake pathway')
 

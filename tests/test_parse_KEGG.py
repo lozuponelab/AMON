@@ -1,7 +1,8 @@
 import pytest
 import asyncio
 
-from microMetabPred.parse_KEGG import get_from_kegg_api, parse_ko, parse_rn, parse_co, parse_pathway, parse_organism
+from microMetabPred.parse_KEGG import get_from_kegg_api, parse_ko, parse_rn, parse_co, parse_pathway, parse_organism, \
+                                      get_from_kegg_flat_file, get_kegg_record_dict
 
 
 @pytest.fixture()
@@ -31,11 +32,12 @@ def test_get_from_kegg_rxns(loop, list_of_rxns):
 
 @pytest.fixture()
 def ko_raw_record():
-    return "ENTRY       K00000                      KO\n" \
+    return "ENTRY       K00001                      KO\n" \
            "NAME        E0.0.0.0\n" \
            "DEFINITION  a fake gene\n" \
            "PATHWAY     ko00000 a fake pathway\n" \
            "DISEASE     H00000 A bad one\n" \
+           "CLASS       Metabolism; Carbohydrate Metabolism; Glycolysis / Gluconeogenesis[PATH:ko00010]\n" \
            "DBLINKS     RN: R00000\n" \
            "            COG: COG0000\n" \
            "GENES       HSA: hsa00000\n" \
@@ -48,7 +50,7 @@ def ko_raw_record():
 
 def test_parse_ko(ko_raw_record):
     ko_record = parse_ko(ko_raw_record)
-    assert len(ko_record) == 7
+    assert len(ko_record) == 8
     assert tuple(ko_record['DBLINKS']['RN']) == tuple(['R00000'])
     assert tuple(ko_record['DBLINKS']['COG']) == tuple(['COG0000'])
 
@@ -59,13 +61,22 @@ def rn_raw_record():
            "NAME        a fake reaction\n" \
            "DEFINITION  reactant 1 + reactant 2 <=> product 1 + product 2\n" \
            "EQUATION    C00000(m+n) + 3 C00001 <=> C00002(m) + (n+1) C00003\n" \
+           "RPAIR       RP05682  C00001_C00011 leave\n" \
+           "            RP07361  C00011_C01010 leave" \
+           "            RP07385  C00014_C01010 leave" \
+           "            RP13530  C00011_C01010 leave" \
+           "            RP13531  C00014_C01010 leave\n" \
            "ENZYME      0.0.0.0\n" \
-           "DBLINKS     HSA: hsa00000\n"
+           "DBLINKS     HSA: hsa00000\n" \
+           "REFERENCE\n" \
+           "  AUTHORS   Fake G.\n" \
+           "  TITLE     Not Real\n" \
+           "  JOURNAL   Nurture (2001)\n"
 
 
 def test_parse_rn(rn_raw_record):
     rn_record = parse_rn(rn_raw_record)
-    assert len(rn_record) == 6
+    assert len(rn_record) == 7
     assert tuple(rn_record['EQUATION'][0]) == tuple(['C00000', 'C00001'])
     assert tuple(rn_record['EQUATION'][1]) == tuple(['C00002', 'C00003'])
 
@@ -82,7 +93,15 @@ def co_raw_record():
            "REACTION    R00906 R00922 R00935 R00936 R00937 R00977 R00994 R01000\n" \
            "            R01033 R01034 R01036 R01061 R01088 R01093 R01094 R01130\n" \
            "PATHWAY     map00000 Fake pathway\n" \
-           "DBLINKS     ChEBI: 00000\n"
+           "DBLINKS     ChEBI: 00000\n" \
+           "ATOM        1\n" \
+           "            1   O0  O    22.1250  -16.2017\n" \
+           "BOND        0\n" \
+           "REFERENCE\n" \
+           "  AUTHORS   Fake G.\n" \
+           "  TITLE     Not Real\n" \
+           "  JOURNAL   Nurture (2001)\n" \
+           "SEQUENCE    [fke:FK_0000]\n"
 
 
 def test_parse_co(co_raw_record):
@@ -133,6 +152,7 @@ def pathway_raw_record():
            "COMPOUND    C00000 A fake compound\n" \
            "            C99999 Another fake compound\n" \
            "DBLINKS     GO: 0019852 0019572\n" \
+           "ORGANISM    Homo sapiens (human) [GN:hsa]\n" \
            "REFERENCE\n" \
            "  AUTHORS   Michal G.\n" \
            "  TITLE     Biochemical Pathways\n" \
@@ -176,3 +196,22 @@ def test_parse_organism(organism_raw_record):
     assert len(organism_record) == 9
     assert len(organism_record['ORTHOLOGY']) == 2
     assert organism_record['ORTHOLOGY'][0] == 'K00000'
+
+
+@pytest.fixture()
+def ko_flat_file(tmpdir_factory, ko_raw_record):
+    fn = tmpdir_factory.mktemp("data").join("ko")
+    fn.write('%s///\n' % '///\n'.join([ko_raw_record] * 3))
+    return str(fn)
+
+
+def test_get_from_kegg_flat_file(ko_flat_file):
+    organism_records = get_from_kegg_flat_file(ko_flat_file)
+    assert len(organism_records) == 3
+
+
+def test_get_kegg_record_dict(list_of_kos, ko_flat_file):
+    ko_dict_web = get_kegg_record_dict(list_of_kos, parse_ko)
+    assert len(ko_dict_web) == 2
+    ko_dict_local = get_kegg_record_dict(list_of_kos, parse_ko, ko_flat_file)
+    assert len(ko_dict_local) == 1
