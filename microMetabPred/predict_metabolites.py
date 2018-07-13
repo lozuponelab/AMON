@@ -73,6 +73,28 @@ def make_compound_origin_table(cos_produced, other_cos_produced=None, cos_measur
     return table
 
 
+def make_kegg_mapper_input(origin_table, origin_colors=('blue', 'green', 'yellow'), detected_color='red'):
+    compounds = list()
+    colors = list()
+    for compound, origins in origin_table.iterrows():
+        compounds.append(compound)
+        origin_color = list()
+        if origins[0] and origins[1]:
+            origin_color.append(origin_colors[1])
+        elif origins[0]:
+            origin_color.append(origin_colors[0])
+        elif origins[1]:
+            origin_color.append(origin_colors[2])
+        else:
+            pass
+        if len(origins) == 3:
+            if origins[2]:
+                origin_color.append(detected_color)
+        colors.append(','.join(origin_color))
+    df = pd.Series(colors, index=compounds)
+    return df
+
+
 def make_venn(bac_cos, host_cos=None, measured_cos=None, output_loc=None):
     if host_cos is None and measured_cos is None:
         raise ValueError("Must give host_cos or measured_cos to make venn diagram")
@@ -178,8 +200,12 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
     else:
         cos_measured = None
     makedirs(output_dir)
+
+    # make compound origin table and kegg mapper input file
     origin_table = make_compound_origin_table(cos_produced, other_cos_produced, cos_measured)
     origin_table.to_csv(path.join(output_dir, 'origin_table.tsv'), sep='\t')
+    kegg_mapper_input = make_kegg_mapper_input(origin_table)
+    kegg_mapper_input.to_csv(path.join(output_dir, 'kegg_mapper.tsv'), sep='\t')
 
     # Get set of compounds
     if detected_only:

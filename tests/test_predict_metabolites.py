@@ -6,7 +6,8 @@ from os.path import isfile
 
 from microMetabPred.predict_metabolites import p_adjust, read_in_ids, make_compound_origin_table, get_rns_from_kos, \
                                                get_products_from_rns, get_pathways_from_cos, get_pathway_to_co_dict, \
-                                               make_venn, calculate_enrichment, make_enrichment_clustermap
+                                               make_venn, calculate_enrichment, make_enrichment_clustermap, \
+                                               make_kegg_mapper_input
 
 
 @pytest.fixture()
@@ -128,7 +129,7 @@ def test_get_products_from_rns(list_of_rns, rn_dict):
 
 @pytest.fixture()
 def list_of_cos():
-    return ['C00003', 'C00002', 'C00005']
+    return ['C00002', 'C00003', 'C00005']
 
 
 @pytest.fixture()
@@ -138,9 +139,10 @@ def list_of_other_cos():
 
 @pytest.fixture()
 def list_of_measured_cos():
-    return ['C00001', 'C00006', 'C00003']
+    return ['C00001', 'C00003', 'C00006']
 
 
+@pytest.fixture()
 def test_make_compound_origin_table(list_of_cos, list_of_other_cos, list_of_measured_cos):
     # bacteria only
     table1 = make_compound_origin_table(list_of_cos)
@@ -158,6 +160,15 @@ def test_make_compound_origin_table(list_of_cos, list_of_other_cos, list_of_meas
     table4 = make_compound_origin_table(list_of_cos, list_of_other_cos, list_of_measured_cos)
     assert table4.shape == (6, 3)
     assert tuple(table4.sum(axis=0)) == (3, 3, 3)
+    return table4
+
+
+def test_make_kegg_mapper_input(test_make_compound_origin_table):
+    kegg_mapper_table = make_kegg_mapper_input(test_make_compound_origin_table)
+    assert kegg_mapper_table.shape == (6,)
+    assert kegg_mapper_table['C00001'] == 'yellow,red'
+    assert kegg_mapper_table['C00002'] == 'green'
+    assert kegg_mapper_table['C00005'] == 'blue'
 
 
 def test_make_venn(list_of_cos, list_of_other_cos, list_of_measured_cos, tmpdir):
