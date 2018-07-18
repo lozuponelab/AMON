@@ -10,7 +10,7 @@ before_install:
 install:
 - pip install --no-cache-dir --editable .
 script:
-- py.test --cov microMetabPred --cov-report term-missing
+- py.test --cov AMON --cov-report term-missing
 after_success:
 - coveralls
 deploy:
