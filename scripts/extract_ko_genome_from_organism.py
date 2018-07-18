@@ -1,6 +1,6 @@
 import argparse
 
-from microMetabPred.parse_KEGG import get_from_kegg_flat_file, parse_organism, get_kegg_link_from_api
+from AMON.parse_KEGG import get_from_kegg_flat_file, parse_organism, get_kegg_link_from_api
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)

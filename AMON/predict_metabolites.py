@@ -18,7 +18,7 @@ import numpy as np
 from biom import load_table
 import seaborn as sns
 
-from microMetabPred.parse_KEGG import parse_ko, parse_rn, parse_co, parse_pathway, get_kegg_record_dict
+from AMON.parse_KEGG import parse_ko, parse_rn, parse_co, parse_pathway, get_kegg_record_dict
 
 
 sns.set()

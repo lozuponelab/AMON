@@ -4,10 +4,10 @@ import pandas as pd
 from biom.table import Table
 from os.path import isfile
 
-from microMetabPred.predict_metabolites import p_adjust, read_in_ids, make_compound_origin_table, get_rns_from_kos, \
-                                               get_products_from_rns, get_pathways_from_cos, get_pathway_to_co_dict, \
-                                               make_venn, calculate_enrichment, make_enrichment_clustermap, \
-                                               make_kegg_mapper_input
+from AMON.predict_metabolites import p_adjust, read_in_ids, make_compound_origin_table, get_rns_from_kos, \
+                                     get_products_from_rns, get_pathways_from_cos, get_pathway_to_co_dict, \
+                                     make_venn, calculate_enrichment, make_enrichment_clustermap, \
+                                     make_kegg_mapper_input
 
 
 @pytest.fixture()

@@ -1,8 +1,8 @@
 import pytest
 import asyncio
 
-from microMetabPred.parse_KEGG import get_from_kegg_api, parse_ko, parse_rn, parse_co, parse_pathway, parse_organism, \
-                                      get_from_kegg_flat_file, get_kegg_record_dict, get_kegg_link_from_api
+from AMON.parse_KEGG import get_from_kegg_api, parse_ko, parse_rn, parse_co, parse_pathway, parse_organism, \
+                            get_from_kegg_flat_file, get_kegg_record_dict, get_kegg_link_from_api
 
 
 @pytest.fixture()
