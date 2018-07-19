@@ -66,29 +66,33 @@ def make_compound_origin_table(cos_produced, other_cos_produced=None, cos_measur
     for co in set(cos_produced) | set(other_cos_produced) | set(cos_measured):
         table[co] = [co in cos_produced, co in other_cos_produced, co in cos_measured]
     table = table.transpose()
-    # get rid of any all false columns
-    table = table[table.columns[table.sum().astype(bool)]]
     return table
 
 
-def make_kegg_mapper_input(origin_table, origin_colors=('blue', 'green', 'yellow'), detected_color='red'):
+def make_kegg_mapper_input(origin_table, origin_colors=('blue', 'green', 'yellow'), detected_color='orange'):
     compounds = list()
     colors = list()
     for compound, origins in origin_table.iterrows():
         compounds.append(compound)
-        origin_color = list()
+        origin_color = None
+        detect_color = None
         if origins[0] and origins[1]:
-            origin_color.append(origin_colors[1])
+            origin_color = origin_colors[1]
         elif origins[0]:
-            origin_color.append(origin_colors[0])
+            origin_color = origin_colors[0]
         elif origins[1]:
-            origin_color.append(origin_colors[2])
+            origin_color = origin_colors[2]
         else:
             pass
         if len(origins) == 3:
             if origins[2]:
-                origin_color.append(detected_color)
-        colors.append(','.join(origin_color))
+                detect_color= detected_color
+        color = ''
+        if origin_color is not None:
+            color += origin_color
+        if detect_color is not None:
+            color += ',%s' % detect_color
+        colors.append(color)
     df = pd.Series(colors, index=compounds)
     return df
 
@@ -203,8 +207,10 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
 
     # make compound origin table and kegg mapper input file
     origin_table = make_compound_origin_table(cos_produced, other_cos_produced, cos_measured)
-    origin_table.to_csv(path.join(output_dir, 'origin_table.tsv'), sep='\t')
     kegg_mapper_input = make_kegg_mapper_input(origin_table)
+    # get rid of any all false columns
+    origin_table = origin_table[origin_table.columns[origin_table.sum().astype(bool)]]
+    origin_table.to_csv(path.join(output_dir, 'origin_table.tsv'), sep='\t')
     kegg_mapper_input.to_csv(path.join(output_dir, 'kegg_mapper.tsv'), sep='\t')
 
     # Get set of compounds

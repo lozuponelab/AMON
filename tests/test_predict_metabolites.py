@@ -146,29 +146,37 @@ def list_of_measured_cos():
 def test_make_compound_origin_table(list_of_cos, list_of_other_cos, list_of_measured_cos):
     # bacteria only
     table1 = make_compound_origin_table(list_of_cos)
-    assert table1.shape == (3, 1)
-    assert tuple(table1.sum(axis=0)) == (3,)
+    assert table1.shape == (3, 3)
+    assert tuple(table1.sum(axis=0)) == (3, 0, 0)
     # host but not measured
     table2 = make_compound_origin_table(list_of_cos, other_cos_produced=list_of_other_cos)
-    assert table2.shape == (5, 2)
-    assert tuple(table2.sum(axis=0)) == (3, 3)
+    assert table2.shape == (5, 3)
+    assert tuple(table2.sum(axis=0)) == (3, 3, 0)
     # measured but no host
     table3 = make_compound_origin_table(list_of_cos, cos_measured=list_of_measured_cos)
-    assert table3.shape == (5, 2)
-    assert tuple(table3.sum(axis=0)) == (3, 3)
+    assert table3.shape == (5, 3)
+    assert tuple(table3.sum(axis=0)) == (3, 0, 3)
     # all
     table4 = make_compound_origin_table(list_of_cos, list_of_other_cos, list_of_measured_cos)
     assert table4.shape == (6, 3)
     assert tuple(table4.sum(axis=0)) == (3, 3, 3)
-    return table4
+    return table1, table2, table3, table4
 
 
 def test_make_kegg_mapper_input(test_make_compound_origin_table):
-    kegg_mapper_table = make_kegg_mapper_input(test_make_compound_origin_table)
-    assert kegg_mapper_table.shape == (6,)
-    assert kegg_mapper_table['C00001'] == 'yellow,red'
-    assert kegg_mapper_table['C00002'] == 'green'
-    assert kegg_mapper_table['C00005'] == 'blue'
+    origin_table1, origin_table2, origin_table3, origin_table4 = test_make_compound_origin_table
+    # bacteria only
+    kegg_mapper_table1 = make_kegg_mapper_input(origin_table1)
+    # host but not measured
+    kegg_mapper_table2 = make_kegg_mapper_input(origin_table2)
+    # measured but no host
+    kegg_mapper_table3 = make_kegg_mapper_input(origin_table3)
+    # all
+    kegg_mapper_table4 = make_kegg_mapper_input(origin_table4)
+    assert kegg_mapper_table4.shape == (6,)
+    assert kegg_mapper_table4['C00001'] == 'yellow,orange'
+    assert kegg_mapper_table4['C00002'] == 'green'
+    assert kegg_mapper_table4['C00005'] == 'blue'
 
 
 def test_make_venn(list_of_cos, list_of_other_cos, list_of_measured_cos, tmpdir):
