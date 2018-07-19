@@ -5,7 +5,7 @@ __author__ = 'shafferm'
 __version__ = version
 
 setup(
-      name="AMON",
+      name="AMON-bio",
       version=__version__,
       setup_requires=['pytest-runner'],
       tests_require=['pytest'],
