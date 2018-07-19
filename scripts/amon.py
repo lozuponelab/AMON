@@ -22,6 +22,8 @@ if __name__ == '__main__':
     parser.add_argument('--co_file_loc', help='Location of compound file from KEGG FTP download')
     parser.add_argument('--pathway_file_loc', help='Location of pathway file from KEGG FTP download')
 
+    parser.add_argument('--verbose', help="verbose output", action='store_true', default=False)
+
     args = parser.parse_args()
     kos_loc = args.input
     output_dir = args.output_dir
@@ -35,8 +37,11 @@ if __name__ == '__main__':
     co_file_loc = args.co_file_loc
     pathway_file_loc = args.pathway_file_loc
 
+    verbose = args.verbose
+
     if detected_compounds_only and detected_compounds is None:
         raise ValueError('Cannot have detected compounds only and not provide detected compounds')
 
     main(kos_loc, output_dir, detected_compounds, other_kos_loc, detected_compounds_only, rn_compounds_only,
-         ko_file_loc=ko_file_loc, rn_file_loc=rn_file_loc, co_file_loc=co_file_loc, pathway_file_loc=pathway_file_loc)
+         ko_file_loc=ko_file_loc, rn_file_loc=rn_file_loc, co_file_loc=co_file_loc, pathway_file_loc=pathway_file_loc,
+         verbose=verbose)

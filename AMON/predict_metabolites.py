@@ -1,5 +1,3 @@
-# TODO: make verbose option that outputs number of reactions and compounds and genes and such
-
 import os
 import matplotlib as mpl
 if os.environ.get('DISPLAY','') == '':
@@ -168,15 +166,19 @@ def make_enrichment_clustermap(microbe_enrichment_p, host_enrichment_p, output_l
 
 
 def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_only=False, rxn_compounds_only=False,
-         ko_file_loc=None, rn_file_loc=None, co_file_loc=None, pathway_file_loc=None):
+         ko_file_loc=None, rn_file_loc=None, co_file_loc=None, pathway_file_loc=None, verbose=False):
     # create output dir to throw error quick
     makedirs(output_dir)
 
     # read in all kos and get records
     kos = read_in_ids(kos_loc)
+    if verbose:
+        print("Number of KOs from microbes: %s" % len(kos))
     all_kos = kos
     if other_kos_loc is not None:
         other_kos = read_in_ids(other_kos_loc)
+        if verbose:
+            print("Number of KOs from host: %s" % len(other_kos))
         all_kos = all_kos + other_kos
     else:
         other_kos = None
@@ -184,9 +186,13 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
 
     # get all reactions from kos
     rns = get_rns_from_kos(kos, ko_dict)
+    if verbose:
+        print("Number of RNs from microbes: %s" % len(rns))
     all_rns = rns
     if other_kos is not None:
         other_rns = get_rns_from_kos(other_kos, ko_dict)
+        if verbose:
+            print("Number of RNs from host: %s" % len(other_rns))
         all_rns = all_rns + other_rns
     else:
         other_rns = None
@@ -194,14 +200,20 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
 
     # Get reactions from KEGG and pull kos produced
     cos_produced = get_products_from_rns(rns, rn_dict)
+    if verbose:
+        print("Number of COs from microbes: %s" % len(cos_produced))
     if other_rns is not None:
         other_cos_produced = get_products_from_rns(other_rns, rn_dict)
+        if verbose:
+            print("Number of COs from host: %s" % len(other_cos_produced))
     else:
         other_cos_produced = None
 
     # read in compounds that were measured if available
     if compounds_loc is not None:
         cos_measured = read_in_ids(compounds_loc)
+        if verbose:
+            print("Number of COs measured: %s" % len(cos_measured))
     else:
         cos_measured = None
 
@@ -235,6 +247,8 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
             if 'REACTION' in record:
                 cos_with_rxn.append(compound)
         cos_measured = set(cos_measured) & set(cos_with_rxn)
+        if verbose:
+            print("Number of COs measured with associated reactions: %s" % len(cos_measured))
 
     # Make venn diagram
     if compounds_loc is not None or other_kos_loc is not None:
