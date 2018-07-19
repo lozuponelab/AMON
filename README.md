@@ -17,13 +17,13 @@ conda activate AMON
 
 Then it can be installed via pip.
 ```bash
-pip install AMON
+pip install AMON-bio
 ```
 
 ### Alternative installation
 Alternatively AMON can be installed from pip directly.
 ```bash
-pip install AMON
+pip install AMON-bio
 ```
 
 ## Running AMON
