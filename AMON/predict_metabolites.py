@@ -1,6 +1,4 @@
-# TODO: make remove measured cos w/o reaction option
-# TODO: make heatmap for significance of pathway enrichments
-# TODO: test running with cos measured
+# TODO: make verbose option that outputs number of reactions and compounds and genes and such
 
 import os
 import matplotlib as mpl
@@ -151,7 +149,7 @@ def calculate_enrichment(cos, co_pathway_dict, min_pathway_size=10):
     return enrichment_table.sort_values('adjusted probability')
 
 
-def make_enrichment_clustermap(microbe_enrichment_p, host_enrichment_p, output_loc, min_p=.2, log=False):
+def make_enrichment_clustermap(microbe_enrichment_p, host_enrichment_p, output_loc, min_p=.1, log=False):
     enriched_pathways = microbe_enrichment_p.loc[microbe_enrichment_p < min_p].index
     enriched_pathways = enriched_pathways | host_enrichment_p.loc[host_enrichment_p < min_p].index
     enrichment_p_df = pd.concat((microbe_enrichment_p, host_enrichment_p), axis=1, sort=True)
@@ -167,6 +165,9 @@ def make_enrichment_clustermap(microbe_enrichment_p, host_enrichment_p, output_l
 
 def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_only=False, rxn_compounds_only=False,
          ko_file_loc=None, rn_file_loc=None, co_file_loc=None, pathway_file_loc=None):
+    # create output dir to throw error quick
+    makedirs(output_dir)
+
     # read in all kos and get records
     kos = read_in_ids(kos_loc)
     all_kos = kos
@@ -199,7 +200,6 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
         cos_measured = read_in_ids(compounds_loc)
     else:
         cos_measured = None
-    makedirs(output_dir)
 
     # make compound origin table and kegg mapper input file
     origin_table = make_compound_origin_table(cos_produced, other_cos_produced, cos_measured)
