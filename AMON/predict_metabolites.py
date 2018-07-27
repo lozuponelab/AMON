@@ -67,31 +67,40 @@ def make_compound_origin_table(cos_produced, other_cos_produced=None, cos_measur
     return table
 
 
-def make_kegg_mapper_input(origin_table, origin_colors=('blue', 'green', 'yellow'), detected_color='orange'):
-    compounds = list()
+def make_kegg_mapper_input(microbe_ids, host_ids=None, detected_ids=None, origin_colors=('blue', 'green', 'yellow'),
+                           detected_color='orange'):
+    if host_ids is None:
+        host_ids = ()
+    if detected_ids is None:
+        detected_ids = ()
+    ids = list()
     colors = list()
-    for compound, origins in origin_table.iterrows():
-        compounds.append(compound)
+    for id in set(microbe_ids) | set(host_ids) | set(detected_ids):
+        # save id
+        ids.append(id)
+        # check where id is present
+        microbe_present = id in microbe_ids
+        host_present = id in host_ids
+        detected_present = id in detected_ids
         origin_color = None
         detect_color = None
-        if origins[0] and origins[1]:
+        if microbe_present and host_present:
             origin_color = origin_colors[1]
-        elif origins[0]:
+        elif microbe_present:
             origin_color = origin_colors[0]
-        elif origins[1]:
+        elif host_present:
             origin_color = origin_colors[2]
         else:
             pass
-        if len(origins) == 3:
-            if origins[2]:
-                detect_color= detected_color
+        if detected_present:
+            detect_color= detected_color
         color = ''
         if origin_color is not None:
             color += origin_color
         if detect_color is not None:
             color += ',%s' % detect_color
         colors.append(color)
-    df = pd.Series(colors, index=compounds)
+    df = pd.Series(colors, index=ids)
     return df
 
 
@@ -219,13 +228,18 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
 
     # make compound origin table and kegg mapper input file
     origin_table = make_compound_origin_table(cos_produced, other_cos_produced, cos_measured)
-    kegg_mapper_input = make_kegg_mapper_input(origin_table)
+    kos_and_cos = tuple(kos) + tuple(cos_produced)
+    if other_kos is not None:
+        other_kos_and_cos = tuple(other_kos) + tuple(other_cos_produced)
+    else:
+        other_kos_and_cos = None
+    kegg_mapper_input = make_kegg_mapper_input(kos_and_cos, other_kos_and_cos, cos_measured)
     # get rid of any all false columns
     origin_table = origin_table[origin_table.columns[origin_table.sum().astype(bool)]]
     origin_table.to_csv(path.join(output_dir, 'origin_table.tsv'), sep='\t')
     kegg_mapper_input.to_csv(path.join(output_dir, 'kegg_mapper.tsv'), sep='\t')
 
-    # Get set of compounds
+    # Get full set of compounds
     if detected_only:
         if other_kos_loc is None:
             all_cos = set(cos_measured) | cos_produced

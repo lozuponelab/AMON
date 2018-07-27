@@ -163,16 +163,15 @@ def test_make_compound_origin_table(list_of_cos, list_of_other_cos, list_of_meas
     return table1, table2, table3, table4
 
 
-def test_make_kegg_mapper_input(test_make_compound_origin_table):
-    origin_table1, origin_table2, origin_table3, origin_table4 = test_make_compound_origin_table
+def test_make_kegg_mapper_input(list_of_cos, list_of_other_cos, list_of_measured_cos):
     # bacteria only
-    kegg_mapper_table1 = make_kegg_mapper_input(origin_table1)
+    kegg_mapper_table1 = make_kegg_mapper_input(list_of_cos)
     # host but not measured
-    kegg_mapper_table2 = make_kegg_mapper_input(origin_table2)
+    kegg_mapper_table2 = make_kegg_mapper_input(list_of_cos, list_of_other_cos)
     # measured but no host
-    kegg_mapper_table3 = make_kegg_mapper_input(origin_table3)
+    kegg_mapper_table3 = make_kegg_mapper_input(list_of_cos, detected_ids=list_of_measured_cos)
     # all
-    kegg_mapper_table4 = make_kegg_mapper_input(origin_table4)
+    kegg_mapper_table4 = make_kegg_mapper_input(list_of_cos, list_of_other_cos, list_of_measured_cos)
     assert kegg_mapper_table4.shape == (6,)
     assert kegg_mapper_table4['C00001'] == 'yellow,orange'
     assert kegg_mapper_table4['C00002'] == 'green'
