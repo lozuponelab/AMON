@@ -110,7 +110,7 @@ def parse_co(co_raw_record):
                 co_dict[current_entry_name] += current_entry_data.split()
             else:
                 co_dict[current_entry_name] = current_entry_data.split()
-        elif current_entry_name in ('PATHWAY', 'MODULE'):
+        elif current_entry_name in ('PATHWAY', 'MODULE', 'ORTHOLOGY'):
             split_current_entry_data = current_entry_data.split()
             current_entry_pathway_id = split_current_entry_data[0]
             current_entry_pathway_name = ' '.join(split_current_entry_data[1:])
