@@ -1,9 +1,4 @@
 import os
-import matplotlib as mpl
-if os.environ.get('DISPLAY','') == '':
-    print('no display found. Using non-interactive Agg backend')
-    mpl.use('Agg')
-
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib_venn import venn2, venn3
@@ -13,9 +8,14 @@ from statsmodels.sandbox.stats.multicomp import multipletests
 import numpy as np
 from biom import load_table
 import seaborn as sns
+import json
 
 from AMON.parse_KEGG import parse_ko, parse_rn, parse_co, parse_pathway, get_kegg_record_dict
 
+import matplotlib as mpl
+if os.environ.get('DISPLAY','') == '':
+    print('no display found. Using non-interactive Agg backend')
+    mpl.use('Agg')
 
 sns.set()
 
@@ -175,7 +175,7 @@ def make_enrichment_clustermap(microbe_enrichment_p, host_enrichment_p, output_l
 
 
 def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_only=False, rxn_compounds_only=False,
-         ko_file_loc=None, rn_file_loc=None, co_file_loc=None, pathway_file_loc=None, verbose=False):
+         ko_file_loc=None, rn_file_loc=None, co_file_loc=None, pathway_file_loc=None, write_json=False, verbose=False):
     # create output dir to throw error quick
     makedirs(output_dir)
 
@@ -192,6 +192,8 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
     else:
         other_kos = None
     ko_dict = get_kegg_record_dict(set(all_kos), parse_ko, ko_file_loc)
+    if write_json:
+        open(path.join(output_dir, 'ko_dict.json'), 'w').write(json.dumps(ko_dict))
 
     # get all reactions from kos
     rns = get_rns_from_kos(kos, ko_dict)
@@ -206,6 +208,8 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
     else:
         other_rns = None
     rn_dict = get_kegg_record_dict(set(all_rns), parse_rn, rn_file_loc)
+    if write_json:
+        open(path.join(output_dir, 'rn_dict.json'), 'w').write(json.dumps(rn_dict))
 
     # Get reactions from KEGG and pull kos produced
     cos_produced = get_products_from_rns(rns, rn_dict)
@@ -253,6 +257,8 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
 
     # Get compound data from kegg
     co_dict = get_kegg_record_dict(all_cos, parse_co, co_file_loc)
+    if write_json:
+        open(path.join(output_dir, 'co_dict.json'), 'w').write(json.dumps(co_dict))
 
     # remove compounds without reactions if required
     if rxn_compounds_only:
