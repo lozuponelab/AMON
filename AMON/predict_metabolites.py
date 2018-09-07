@@ -293,10 +293,10 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
 
     # calculate enrichment
     pathway_enrichment_df = calculate_enrichment(cos_produced, pathway_to_compound_dict)
-    pathway_enrichment_df.to_csv(path.join(output_dir, 'bacteria_enrichment.tsv'), sep='\t')
+    pathway_enrichment_df.to_csv(path.join(output_dir, 'compound_pathway_enrichment.tsv'), sep='\t')
     if other_kos_loc is not None:
         other_pathway_enrichment_df = calculate_enrichment(other_cos_produced, pathway_to_compound_dict)
-        other_pathway_enrichment_df.to_csv(path.join(output_dir, 'host_enrichment.tsv'), sep='\t')
+        other_pathway_enrichment_df.to_csv(path.join(output_dir, 'other_compound_pathway_enrichment.tsv'), sep='\t')
     else:
         other_pathway_enrichment_df = None
 
