@@ -255,7 +255,7 @@ async def download_coroutine(session, url):
         if response.status == 200:
             return await response.text()
         else:
-            raise ValueError('Bad connection: %s' % url)
+            raise ValueError('Bad HTTP request status %s: %s\n%s' % (response.status, response.reason, url))
 
 
 async def kegg_download_manager(loop, list_of_ids):
