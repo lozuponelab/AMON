@@ -1,6 +1,7 @@
 import argparse
 
-from AMON.parse_KEGG import get_from_kegg_flat_file, parse_organism, get_kegg_link_from_api
+from KEGG_parser.parsers import parse_organism
+from KEGG_parser.downloader import get_from_kegg_flat_file, get_kegg_link_from_api
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -9,7 +10,7 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output', help="Output file of new line separated list of KOs from genome",
                         required=True)
     parser.add_argument('--from_flat_file', help="Indicates that input is a flat flile to be parsered directly",
-                       action='store_true', default=False)
+                        action='store_true', default=False)
 
     args = parser.parse_args()
 

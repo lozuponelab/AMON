@@ -10,10 +10,11 @@ from biom import load_table
 import seaborn as sns
 import json
 
-from AMON.parse_KEGG import parse_ko, parse_rn, parse_co, parse_pathway, get_kegg_record_dict
+from KEGG_parser.parsers import parse_ko, parse_rn, parse_co, parse_pathway
+from KEGG_parser.downloader import get_kegg_record_dict
 
 import matplotlib as mpl
-if os.environ.get('DISPLAY','') == '':
+if os.environ.get('DISPLAY', '') == '':
     print('no display found. Using non-interactive Agg backend')
     mpl.use('Agg')
 
@@ -75,13 +76,13 @@ def make_kegg_mapper_input(microbe_ids, host_ids=None, detected_ids=None, origin
         detected_ids = ()
     ids = list()
     colors = list()
-    for id in set(microbe_ids) | set(host_ids) | set(detected_ids):
+    for id_ in set(microbe_ids) | set(host_ids) | set(detected_ids):
         # save id
-        ids.append(id)
+        ids.append(id_)
         # check where id is present
-        microbe_present = id in microbe_ids
-        host_present = id in host_ids
-        detected_present = id in detected_ids
+        microbe_present = id_ in microbe_ids
+        host_present = id_ in host_ids
+        detected_present = id_ in detected_ids
         origin_color = None
         detect_color = None
         if microbe_present and host_present:
@@ -93,7 +94,7 @@ def make_kegg_mapper_input(microbe_ids, host_ids=None, detected_ids=None, origin
         else:
             pass
         if detected_present:
-            detect_color= detected_color
+            detect_color = detected_color
         color = ''
         if origin_color is not None:
             color += origin_color
