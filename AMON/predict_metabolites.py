@@ -35,7 +35,12 @@ def read_in_ids(file_loc):
     elif file_loc.endswith('.tsv') or file_loc.endswith('.csv'):
         return list(pd.read_table(file_loc, sep=None, index_col=0).columns)
     elif file_loc.endswith('.biom'):
-        return list(load_table(file_loc).ids(axis='observation'))
+        id_table = load_table(file_loc)
+        # first remove KO's which aren't present in any samples
+        ids_to_keep = id_table.ids(axis='observation')[id_table.sum(axis='observation') > 0]
+        id_table.filter(ids_to_keep, axis='observation',
+                        inplace=True)
+        return list(id_table.ids(axis='observation'))
     else:
         raise ValueError('Input file %s does not have a valid file ending.')
 

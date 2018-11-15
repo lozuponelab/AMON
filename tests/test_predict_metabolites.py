@@ -3,6 +3,7 @@ from numpy.testing import assert_allclose
 import pandas as pd
 from biom.table import Table
 from os.path import isfile
+import numpy as np
 
 from AMON.predict_metabolites import p_adjust, read_in_ids, make_compound_origin_table, get_rns_from_kos, \
                                      get_products_from_rns, get_pathways_from_cos, get_pathway_to_co_dict, \
@@ -44,8 +45,8 @@ def ids_csv(tmpdir_factory, list_of_kos):
     fn = tmpdir_factory.mktemp("data").join("ko_list.csv")
     columns = list_of_kos
     index = ('Sample1', 'Sample2')
-    data = [[1, 1, 1],
-            [1, 1, 1]]
+    data = np.array([[1, 1, 1],
+                     [1, 1, 1]])
     df = pd.DataFrame(data, index=index, columns=columns)
     df.to_csv(str(fn))
     return str(fn)
@@ -78,11 +79,11 @@ def test_read_in_ids_tsv(ids_tsv, list_of_kos):
 @pytest.fixture()
 def ids_biom(tmpdir_factory, list_of_kos):
     fn = tmpdir_factory.mktemp("data").join("ko_list.biom")
-    observations = list_of_kos
+    observations = list_of_kos + ['K99999']
     samples = ('Sample1', 'Sample2')
-    data = [[1, 1, 1],
-            [1, 1, 1]]
-    table = Table(data, observations, samples)
+    data = np.array([[1, 1, 1, 0],
+                     [1, 1, 1, 0]])
+    table = Table(data.transpose(), observations, samples)
     table.to_json('testing', open(str(fn), 'w'))
     return str(fn)
 

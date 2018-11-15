@@ -125,6 +125,10 @@ def parse_co(co_raw_record):
         # Protein information we are currently ignoring
         elif current_entry_name in ('SEQUENCE', 'GENE', 'ORGANISM', 'TYPE'):
             pass
+        # Drug information we are currently ignoring
+        elif current_entry_name in ('EFFICACY', 'PRODUCT', 'CLASS', 'DISEASE', 'TARGET', 'METABOLISM', 'INTERACTION',
+                                    'STR_MAP'):
+            pass
         elif current_entry_name == 'DBLINKS':
             split_current_entry_data = current_entry_data.split(': ')
             if current_entry_name not in co_dict:
