@@ -115,18 +115,18 @@ def make_venn(bac_cos, host_cos=None, measured_cos=None, output_loc=None):
         raise ValueError("Must give host_cos or measured_cos to make venn diagram")
     if host_cos is not None and measured_cos is None:
         _ = venn2((set(bac_cos), set(host_cos)),
-                  ("Compounds predicted\nproduced by bacteria", "Compounds predicted\nproduced by host"),
+                  ("Compounds predicted\nproduced by gene set", "Compounds predicted\nproduced by other gene set"),
                   set_colors=('white',)*2)
         c = venn2_circles((set(bac_cos), set(host_cos)), linestyle='solid')
     elif host_cos is None and measured_cos is not None:
         _ = venn2((set(bac_cos), set(measured_cos)),
-                  ("Compounds predicted\nproduced by bacteria", "Compounds measured"),
+                  ("Compounds predicted\nproduced by gene set", "Compounds measured"),
                   set_colors=('white',)*2)
         c = venn2_circles((set(bac_cos), set(measured_cos)), linestyle='solid')
     else:
         _ = venn3((set(measured_cos), set(bac_cos), set(host_cos)),
-                  ("Compounds measured", "Compounds predicted\nproduced by bacteria",
-                      "Compounds predicted\nproduced by host"),
+                  ("Compounds measured", "Compounds predicted\nproduced by gene set",
+                      "Compounds predicted\nproduced by other gene set"),
                   set_colors=('white',)*3)
         c = venn3_circles((set(measured_cos), set(bac_cos), set(host_cos)), linestyle='solid')
     if output_loc is not None:
