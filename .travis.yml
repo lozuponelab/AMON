@@ -10,7 +10,7 @@ before_install:
 install:
 - pip install --no-cache-dir --editable .
 script:
-- export MPLBACKEND=Agg
+- export MPLBACKEND="agg"
 - py.test --cov AMON --cov-report term-missing
 after_success:
 - coveralls
