@@ -169,7 +169,10 @@ def calculate_enrichment(cos, co_pathway_dict, min_pathway_size=10):
     enrichment_table = pd.DataFrame(pathway_data, index=pathway_names,
                                     columns=["pathway size", "overlap", "probability"])
     enrichment_table['adjusted probability'] = p_adjust(enrichment_table.probability)
-    return enrichment_table.sort_values('adjusted probability')
+    if np.any((enrichment_table['adjusted probability'] < .05) & (enrichment_table['overlap'] == 0)):
+        return None
+    else:
+        return enrichment_table.sort_values('adjusted probability')
 
 
 def make_enrichment_clustermap(microbe_enrichment_p, host_enrichment_p, output_loc, min_p=.1, log=False):
@@ -305,15 +308,18 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
 
     # calculate enrichment
     pathway_enrichment_df = calculate_enrichment(cos_produced, pathway_to_compound_dict)
-    pathway_enrichment_df.to_csv(path.join(output_dir, 'compound_pathway_enrichment.tsv'), sep='\t')
+    if pathway_enrichment_df is not None:
+        pathway_enrichment_df.to_csv(path.join(output_dir, 'compound_pathway_enrichment.tsv'), sep='\t')
     if other_kos_loc is not None:
         other_pathway_enrichment_df = calculate_enrichment(other_cos_produced, pathway_to_compound_dict)
-        other_pathway_enrichment_df.to_csv(path.join(output_dir, 'other_compound_pathway_enrichment.tsv'), sep='\t')
+        if other_pathway_enrichment_df is not None:
+            other_pathway_enrichment_df.to_csv(path.join(output_dir, 'other_compound_pathway_enrichment.tsv'), sep='\t')
     else:
         other_pathway_enrichment_df = None
 
-    # plot enrichment
-    if other_pathway_enrichment_df is not None:
-        make_enrichment_clustermap(pathway_enrichment_df['adjusted probability'],
-                                   other_pathway_enrichment_df['adjusted probability'],
-                                   path.join(output_dir, 'enrichment_heatmap.png'))
+    if pathway_enrichment_df is not None and other_pathway_enrichment_df is not None:
+        # plot enrichment
+        if other_pathway_enrichment_df is not None:
+            make_enrichment_clustermap(pathway_enrichment_df['adjusted probability'],
+                                       other_pathway_enrichment_df['adjusted probability'],
+                                       path.join(output_dir, 'enrichment_heatmap.png'))
