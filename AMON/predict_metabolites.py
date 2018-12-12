@@ -13,12 +13,9 @@ import json
 from KEGG_parser.parsers import parse_ko, parse_rn, parse_co, parse_pathway
 from KEGG_parser.downloader import get_kegg_record_dict
 
-import matplotlib as mpl
-if os.environ.get('DISPLAY', '') == '':
-    print('no display found. Using non-interactive Agg backend')
-    mpl.use('Agg')
-
 sns.set()
+
+# TODO: take multiple files
 
 
 def p_adjust(pvalues, method='fdr_bh'):
@@ -110,23 +107,24 @@ def make_kegg_mapper_input(microbe_ids, host_ids=None, detected_ids=None, origin
     return df
 
 
-def make_venn(bac_cos, host_cos=None, measured_cos=None, output_loc=None):
+def make_venn(bac_cos, host_cos=None, measured_cos=None, output_loc=None, name1='gene_set_1', name2='gene_set_2'):
     if host_cos is None and measured_cos is None:
         raise ValueError("Must give host_cos or measured_cos to make venn diagram")
     if host_cos is not None and measured_cos is None:
         _ = venn2((set(bac_cos), set(host_cos)),
-                  ("Compounds predicted\nproduced by gene set", "Compounds predicted\nproduced by other gene set"),
+                  ("Compounds predicted\nproduced by %s" % name1.replace('_', ' '),
+                   "Compounds predicted\nproduced by %s" % name2.replace('_', ' ')),
                   set_colors=('white',)*2)
         c = venn2_circles((set(bac_cos), set(host_cos)), linestyle='solid')
     elif host_cos is None and measured_cos is not None:
         _ = venn2((set(bac_cos), set(measured_cos)),
-                  ("Compounds predicted\nproduced by gene set", "Compounds measured"),
+                  ("Compounds predicted\nproduced by %s" % name1.replace('_', ' '), "Compounds measured"),
                   set_colors=('white',)*2)
         c = venn2_circles((set(bac_cos), set(measured_cos)), linestyle='solid')
     else:
         _ = venn3((set(measured_cos), set(bac_cos), set(host_cos)),
-                  ("Compounds measured", "Compounds predicted\nproduced by gene set",
-                      "Compounds predicted\nproduced by other gene set"),
+                  ("Compounds measured", "Compounds predicted\nproduced by %s" % name1.replace('_', ' '),
+                   "Compounds predicted\nproduced by %s" % name2.replace('_', ' ')),
                   set_colors=('white',)*3)
         c = venn3_circles((set(measured_cos), set(bac_cos), set(host_cos)), linestyle='solid')
     if output_loc is not None:
@@ -175,12 +173,14 @@ def calculate_enrichment(cos, co_pathway_dict, min_pathway_size=10):
         return enrichment_table.sort_values('adjusted probability')
 
 
-def make_enrichment_clustermap(microbe_enrichment_p, host_enrichment_p, output_loc, min_p=.1, log=False):
+def make_enrichment_clustermap(microbe_enrichment_p, host_enrichment_p, output_loc, min_p=.1, log=False,
+                               name1='gene_set_1', name2='gene_set_2'):
     enriched_pathways = microbe_enrichment_p.loc[microbe_enrichment_p < min_p].index
     enriched_pathways = enriched_pathways | host_enrichment_p.loc[host_enrichment_p < min_p].index
     enrichment_p_df = pd.concat((microbe_enrichment_p, host_enrichment_p), axis=1, sort=True)
     enrichment_p_df = enrichment_p_df.loc[enriched_pathways]
-    enrichment_p_df.columns = ("Predicted Bacterial Only", "Predicted Host Only")
+    enrichment_p_df.columns = ("Predicted %s Only" % name1.replace('_', ' '),
+                               "Predicted %s Only" % name2.replace('_', ' '))
     if log:
         enrichment_p_df = np.log(enrichment_p_df)
     g = sns.clustermap(enrichment_p_df, col_cluster=False, figsize=(2, 12), cmap="Blues_r", method="average")
@@ -189,8 +189,9 @@ def make_enrichment_clustermap(microbe_enrichment_p, host_enrichment_p, output_l
     plt.savefig(output_loc, dpi=500, bbox_inches='tight')
 
 
-def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_only=False, rxn_compounds_only=False,
-         ko_file_loc=None, rn_file_loc=None, co_file_loc=None, pathway_file_loc=None, write_json=False, verbose=False):
+def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, name1='gene_set_1', name2='gene_set_2',
+         detected_only=False, rxn_compounds_only=False, ko_file_loc=None, rn_file_loc=None, co_file_loc=None,
+         pathway_file_loc=None, write_json=False, verbose=False):
     # create output dir to throw error quick
     makedirs(output_dir)
 
@@ -309,11 +310,12 @@ def main(kos_loc, output_dir, compounds_loc=None, other_kos_loc=None, detected_o
     # calculate enrichment
     pathway_enrichment_df = calculate_enrichment(cos_produced, pathway_to_compound_dict)
     if pathway_enrichment_df is not None:
-        pathway_enrichment_df.to_csv(path.join(output_dir, 'compound_pathway_enrichment.tsv'), sep='\t')
+        pathway_enrichment_df.to_csv(path.join(output_dir, '%s_compound_pathway_enrichment.tsv' % name1), sep='\t')
     if other_kos_loc is not None:
         other_pathway_enrichment_df = calculate_enrichment(other_cos_produced, pathway_to_compound_dict)
         if other_pathway_enrichment_df is not None:
-            other_pathway_enrichment_df.to_csv(path.join(output_dir, 'other_compound_pathway_enrichment.tsv'), sep='\t')
+            other_pathway_enrichment_df.to_csv(path.join(output_dir, '%s_compound_pathway_enrichment.tsv' % name2),
+                                               sep='\t')
     else:
         other_pathway_enrichment_df = None
 
