@@ -8,7 +8,8 @@ import numpy as np
 from AMON.predict_metabolites import p_adjust, read_in_ids, make_compound_origin_table, get_rns_from_kos, \
                                      get_products_from_rns, get_pathways_from_cos, get_pathway_to_co_dict, \
                                      make_venn, calculate_enrichment, make_enrichment_clustermap, \
-                                     make_kegg_mapper_input
+                                     make_kegg_mapper_input, reverse_dict_of_lists, merge_dicts_of_lists,\
+                                     get_unique_from_dict_of_lists
 
 
 @pytest.fixture()
@@ -35,9 +36,9 @@ def ids_txt(tmpdir_factory, list_of_kos):
 
 
 def test_read_in_ids_txt(ids_txt, list_of_kos):
-    ids = read_in_ids(ids_txt)
-    assert len(ids) == 3
-    assert tuple(ids) == tuple(list_of_kos)
+    ids = read_in_ids(ids_txt, name='Sample1')
+    assert len(ids) == 1
+    assert ids['Sample1'] == set(list_of_kos)
 
 
 @pytest.fixture()
@@ -45,17 +46,26 @@ def ids_csv(tmpdir_factory, list_of_kos):
     fn = tmpdir_factory.mktemp("data").join("ko_list.csv")
     columns = list_of_kos
     index = ('Sample1', 'Sample2')
-    data = np.array([[1, 1, 1],
-                     [1, 1, 1]])
+    data = np.array([[1, 1, 0],
+                     [1, 0, 1]])
     df = pd.DataFrame(data, index=index, columns=columns)
     df.to_csv(str(fn))
     return str(fn)
 
 
 def test_read_in_ids_csv(ids_csv, list_of_kos):
-    ids = read_in_ids(ids_csv)
-    assert len(ids) == 3
-    assert tuple(ids) == tuple(list_of_kos)
+    ids = read_in_ids(ids_csv, name='Sample1')
+    assert len(ids) == 1
+    assert set(ids['Sample1']) == set(list_of_kos)
+
+
+def test_read_in_ids_csv_keep_separated(ids_csv):
+    sample_dict = read_in_ids(ids_csv, keep_separated=True)
+    assert len(sample_dict) == 2
+    assert 'Sample1' in sample_dict
+    assert set(sample_dict['Sample1']) == {'K00001', 'K00002'}
+    assert 'Sample2' in sample_dict
+    assert set(sample_dict['Sample2']) == {'K00001', 'K00003'}
 
 
 @pytest.fixture()
@@ -63,17 +73,26 @@ def ids_tsv(tmpdir_factory, list_of_kos):
     fn = tmpdir_factory.mktemp("data").join("ko_list.tsv")
     columns = list_of_kos
     index = ('Sample1', 'Sample2')
-    data = [[1, 1, 1],
-            [1, 1, 1]]
+    data = [[1, 1, 0],
+            [1, 0, 1]]
     df = pd.DataFrame(data, index=index, columns=columns)
     df.to_csv(str(fn), sep='\t')
     return str(fn)
 
 
 def test_read_in_ids_tsv(ids_tsv, list_of_kos):
-    ids = read_in_ids(ids_tsv)
-    assert len(ids) == 3
-    assert tuple(ids) == tuple(list_of_kos)
+    ids = read_in_ids(ids_tsv, name='Sample1')
+    assert len(ids) == 1
+    assert set(ids['Sample1']) == set(list_of_kos)
+
+
+def test_read_in_ids_tsv_keep_separated(ids_tsv):
+    sample_dict = read_in_ids(ids_tsv, keep_separated=True)
+    assert len(sample_dict) == 2
+    assert 'Sample1' in sample_dict
+    assert set(sample_dict['Sample1']) == {'K00001', 'K00002'}
+    assert 'Sample2' in sample_dict
+    assert set(sample_dict['Sample2']) == {'K00001', 'K00003'}
 
 
 @pytest.fixture()
@@ -81,17 +100,26 @@ def ids_biom(tmpdir_factory, list_of_kos):
     fn = tmpdir_factory.mktemp("data").join("ko_list.biom")
     observations = list_of_kos + ['K99999']
     samples = ('Sample1', 'Sample2')
-    data = np.array([[1, 1, 1, 0],
-                     [1, 1, 1, 0]])
+    data = np.array([[1, 1, 0, 0],
+                     [1, 0, 1, 0]])
     table = Table(data.transpose(), observations, samples)
     table.to_json('testing', open(str(fn), 'w'))
     return str(fn)
 
 
 def test_read_in_ids_biom(ids_biom, list_of_kos):
-    ids = read_in_ids(ids_biom)
-    assert len(ids) == 3
-    assert tuple(ids) == tuple(list_of_kos)
+    ids = read_in_ids(ids_biom, keep_separated=False, name='Sample1')
+    assert len(ids) == 1
+    assert set(ids['Sample1']) == set(list_of_kos)
+
+
+def test_read_in_ids_biom_keep_separated(ids_biom):
+    sample_dict = read_in_ids(ids_biom, keep_separated=True)
+    assert len(sample_dict) == 2
+    assert 'Sample1' in sample_dict
+    assert set(sample_dict['Sample1']) == {'K00001', 'K00002'}
+    assert 'Sample2' in sample_dict
+    assert set(sample_dict['Sample2']) == {'K00001', 'K00003'}
 
 
 def test_read_in_ids_bad_ending():
@@ -106,9 +134,18 @@ def ko_dict():
     return {'K00001': ko1, 'K00002': ko2}
 
 
-def test_get_rns_from_kos(list_of_kos, ko_dict):
-    rns = get_rns_from_kos(list_of_kos, ko_dict)
+@pytest.fixture()
+def dict_of_kos(list_of_kos):
+    return {'Sample1': {'K00001', 'K00002'},
+            'Sample2': {'K00001'}
+    }
+
+
+def test_get_rns_from_kos(dict_of_kos, ko_dict):
+    rns = get_rns_from_kos(dict_of_kos, ko_dict)
     assert len(rns) == 2
+    assert len(rns['Sample1']) == 2
+    assert len(rns['Sample2']) == 2
 
 
 @pytest.fixture()
@@ -123,9 +160,25 @@ def rn_dict():
     return {'R00000': rn1, 'R00001': rn2}
 
 
-def test_get_products_from_rns(list_of_rns, rn_dict):
-    products = get_products_from_rns(list_of_rns, rn_dict)
-    assert len(products) == 3
+@pytest.fixture()
+def dict_of_rns(list_of_rns):
+    return {'Sample1': list_of_rns}
+
+
+def test_get_products_from_rns(dict_of_rns, rn_dict):
+    products = get_products_from_rns(dict_of_rns, rn_dict)
+    assert len(products) == 1
+    assert len(products['Sample1']) == 3
+
+
+def test_reverse_dict_of_lists():
+    dict_of_lists = {'Sample1': ['C00001', 'C00002'],
+                     'Sample2': ['C00001', 'C00003']}
+    reversed_dict_of_lists = reverse_dict_of_lists(dict_of_lists)
+    assert len(reversed_dict_of_lists) == 3
+    assert len(reversed_dict_of_lists['C00001']) == 2
+    assert len(reversed_dict_of_lists['C00002']) == 1
+    assert len(reversed_dict_of_lists['C00003']) == 1
 
 
 @pytest.fixture()
@@ -139,58 +192,69 @@ def list_of_other_cos():
 
 
 @pytest.fixture()
+def dict_of_cos(list_of_cos, list_of_other_cos):
+    return {'Sample1': list_of_cos,
+            'Sample2': list_of_other_cos}
+
+
+@pytest.fixture()
 def list_of_measured_cos():
     return ['C00001', 'C00003', 'C00006']
 
 
-@pytest.fixture()
-def test_make_compound_origin_table(list_of_cos, list_of_other_cos, list_of_measured_cos):
-    # bacteria only
-    table1 = make_compound_origin_table(list_of_cos)
-    assert table1.shape == (3, 3)
-    assert tuple(table1.sum(axis=0)) == (3, 0, 0)
-    # host but not measured
-    table2 = make_compound_origin_table(list_of_cos, other_cos_produced=list_of_other_cos)
+def test_make_compound_origin_table(dict_of_cos, list_of_measured_cos):
+    # two samples
+    table1 = make_compound_origin_table(dict_of_cos)
+    assert table1.shape == (5, 2)
+    assert tuple(table1.sum(axis=0)) == (3, 3)
+    # two samples and measured compounds
+    table2 = make_compound_origin_table(dict_of_cos, list_of_measured_cos)
     assert table2.shape == (5, 3)
-    assert tuple(table2.sum(axis=0)) == (3, 3, 0)
-    # measured but no host
-    table3 = make_compound_origin_table(list_of_cos, cos_measured=list_of_measured_cos)
-    assert table3.shape == (5, 3)
-    assert tuple(table3.sum(axis=0)) == (3, 0, 3)
-    # all
-    table4 = make_compound_origin_table(list_of_cos, list_of_other_cos, list_of_measured_cos)
-    assert table4.shape == (6, 3)
-    assert tuple(table4.sum(axis=0)) == (3, 3, 3)
-    return table1, table2, table3, table4
+    assert tuple(table2.sum(axis=0)) == (3, 3, 2)
 
 
-def test_make_kegg_mapper_input(list_of_cos, list_of_other_cos, list_of_measured_cos):
+def test_merge_dicts_of_lists(dict_of_kos, dict_of_cos):
+    merged_dicts = merge_dicts_of_lists(dict_of_kos, dict_of_cos)
+    assert len(merged_dicts) == 2
+    assert set(merged_dicts['Sample1']) == {'K00001', 'K00002', 'C00002', 'C00003', 'C00005'}
+    assert set(merged_dicts['Sample2']) == {'K00001', 'C00001', 'C00002', 'C00004'}
+
+
+def test_make_kegg_mapper_input(list_of_cos, dict_of_cos, list_of_measured_cos):
     # bacteria only
-    kegg_mapper_table1 = make_kegg_mapper_input(list_of_cos)
+    kegg_mapper_table1 = make_kegg_mapper_input({'Sample1': list_of_cos})
     # host but not measured
-    kegg_mapper_table2 = make_kegg_mapper_input(list_of_cos, list_of_other_cos)
+    kegg_mapper_table2 = make_kegg_mapper_input(dict_of_cos)
     # measured but no host
-    kegg_mapper_table3 = make_kegg_mapper_input(list_of_cos, detected_ids=list_of_measured_cos)
+    kegg_mapper_table3 = make_kegg_mapper_input({'Sample1': list_of_cos}, detected_ids=list_of_measured_cos)
     # all
-    kegg_mapper_table4 = make_kegg_mapper_input(list_of_cos, list_of_other_cos, list_of_measured_cos)
+    kegg_mapper_table4 = make_kegg_mapper_input(dict_of_cos, list_of_measured_cos)
     assert kegg_mapper_table4.shape == (6,)
     assert kegg_mapper_table4['C00001'] == 'yellow,orange'
     assert kegg_mapper_table4['C00002'] == 'green'
+    assert kegg_mapper_table4['C00004'] == 'yellow'
     assert kegg_mapper_table4['C00005'] == 'blue'
 
 
-def test_make_venn(list_of_cos, list_of_other_cos, list_of_measured_cos, tmpdir):
+def test_get_unique_from_dict_of_lists(dict_of_cos):
+    unique_dict_of_cos = get_unique_from_dict_of_lists(dict_of_cos)
+    assert len(unique_dict_of_cos) == 2
+    assert set(unique_dict_of_cos['Sample1']) == {'C00003', 'C00005'}
+    assert set(unique_dict_of_cos['Sample2']) == {'C00001', 'C00004'}
+
+
+def test_make_venn(dict_of_cos, list_of_measured_cos, tmpdir):
     with pytest.raises(ValueError):
-        make_venn(list_of_cos)
+        make_venn({'Sample1': list_of_measured_cos})
     p = tmpdir.mkdir('test_venn')
     b_h_venn_path = str(p.join('b_h_venn.png'))
-    make_venn(list_of_cos, host_cos=list_of_other_cos, output_loc=b_h_venn_path)
+    make_venn(dict_of_cos, output_loc=b_h_venn_path)
     assert isfile(b_h_venn_path)
     b_m_venn_path = str(p.join('b_m_venn.png'))
-    make_venn(list_of_cos, measured_cos=list_of_measured_cos, output_loc=b_m_venn_path)
+    make_venn({'Sample1': list_of_measured_cos}, measured_cos=list_of_measured_cos, output_loc=b_m_venn_path)
     assert isfile(b_m_venn_path)
     b_h_m_venn_path = str(p.join('b_m_h_venn.png'))
-    make_venn(list_of_cos, list_of_other_cos, list_of_measured_cos, output_loc=b_h_m_venn_path)
+    make_venn(dict_of_cos, list_of_measured_cos, output_loc=b_h_m_venn_path)
     assert isfile(b_h_m_venn_path)
 
 
@@ -245,8 +309,26 @@ def host_p_values():
     return pd.Series((.001, .2, .7), index=('one fake pathway', 'two fake pathway', 'three fake pathway'))
 
 
-def test_make_enrichment_clustermap(p_values, host_p_values, tmpdir):
+@pytest.fixture()
+def enrichment_dfs():
+    data1 = [[1, .001],
+            [1, .2],
+            [10, .7],
+            [3, .0005]]
+    df1 = pd.DataFrame(data1, index=('one fake pathway', 'two fake pathway', 'three fake pathway', 'four fake pathway'),
+                       columns=('overlap', 'p-value'))
+    data2 = [[1, .0000005],
+            [1, .05],
+            [10, .5],
+            [1, .002]]
+    df2 = pd.DataFrame(data2, index=('one fake pathway', 'two fake pathway', 'three fake pathway', 'four fake pathway'),
+                       columns=('overlap', 'p-value'))
+    return {'Sample1': df1,
+            'Sample2': df2}
+
+
+def test_make_enrichment_clustermap(enrichment_dfs, tmpdir):
     p = tmpdir.mkdir('test_venn')
     enrichment_path = str(p.join('enrichment_heatmap.png'))
-    make_enrichment_clustermap(p_values, host_p_values, output_loc=enrichment_path)
+    make_enrichment_clustermap(enrichment_dfs, 'p-value', output_loc=enrichment_path)
     assert isfile(enrichment_path)
