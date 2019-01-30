@@ -10,7 +10,7 @@ setup(
       setup_requires=['pytest-runner'],
       tests_require=['pytest'],
       install_requires=['scipy', 'biom-format', 'pandas', 'matplotlib', 'statsmodels', 'numpy', 'aiohttp', 'seaborn',
-                        'matplotlib-venn'],
+                        'matplotlib-venn', 'KEGG-parser'],
       scripts=['scripts/amon.py', 'scripts/extract_ko_genome_from_organism.py'],
       packages=find_packages(),
       description="Annotation of Metabolite Origin via Networks: A tool for predicting putative metabolite origins for"
