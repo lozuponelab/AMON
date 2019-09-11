@@ -1,4 +1,3 @@
-import pytest
 from numpy.testing import assert_allclose
 import pandas as pd
 from biom.table import Table
@@ -218,22 +217,6 @@ def test_merge_dicts_of_lists(dict_of_kos, dict_of_cos):
     assert len(merged_dicts) == 2
     assert set(merged_dicts['Sample1']) == {'K00001', 'K00002', 'C00002', 'C00003', 'C00005'}
     assert set(merged_dicts['Sample2']) == {'K00001', 'C00001', 'C00002', 'C00004'}
-
-
-def test_make_kegg_mapper_input(list_of_cos, dict_of_cos, list_of_measured_cos):
-    # bacteria only
-    kegg_mapper_table1 = make_kegg_mapper_input({'Sample1': list_of_cos})
-    # host but not measured
-    kegg_mapper_table2 = make_kegg_mapper_input(dict_of_cos)
-    # measured but no host
-    kegg_mapper_table3 = make_kegg_mapper_input({'Sample1': list_of_cos}, detected_ids=list_of_measured_cos)
-    # all
-    kegg_mapper_table4 = make_kegg_mapper_input(dict_of_cos, list_of_measured_cos)
-    assert kegg_mapper_table4.shape == (6,)
-    assert kegg_mapper_table4['C00001'] == 'yellow,orange'
-    assert kegg_mapper_table4['C00002'] == 'green'
-    assert kegg_mapper_table4['C00004'] == 'yellow'
-    assert kegg_mapper_table4['C00005'] == 'blue'
 
 
 def test_get_unique_from_dict_of_lists(dict_of_cos):
