@@ -1,3 +1,4 @@
+import pytest
 from numpy.testing import assert_allclose
 import pandas as pd
 from biom.table import Table
