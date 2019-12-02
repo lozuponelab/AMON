@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import argparse
 
 from KEGG_parser.parsers import parse_organism

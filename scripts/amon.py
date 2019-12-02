@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import argparse
 
 from AMON.predict_metabolites import main
