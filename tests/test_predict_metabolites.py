@@ -88,7 +88,7 @@ def test_read_in_ids_tsv(ids_tsv, list_of_kos):
 
 def test_read_in_ids_tsv_keep_separated(ids_tsv):
     sample_dict = read_in_ids(ids_tsv, keep_separated=True)
-    assert len(sample_dict) == 2
+    assert 2 == len(sample_dict)
     assert 'Sample1' in sample_dict
     assert set(sample_dict['Sample1']) == {'K00001', 'K00002'}
     assert 'Sample2' in sample_dict
