@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 from AMON import __version__ as version
 
-__author__ = 'shafferm'
+__author__ = 'lozuponelab'
 __version__ = version
 
 setup(
@@ -15,8 +15,8 @@ setup(
       packages=find_packages(),
       description="Annotation of Metabolite Origin via Networks: A tool for predicting putative metabolite origins for"
                   "microbes or between microbes and host with or without metabolomics data",
-      author="Michael Shaffer",
-      author_email='michael.shaffer@ucdenver.edu',
-      url="https://github.com/shafferm/AMON/",
-      download_url="https://github.com/shafferm/AMON/tarball/%s" % __version__
+      author="Michael Shaffer, Kumar Thurimella",
+      author_email='lozuponelab.dev@olucdenver.onmicrosoft.com',
+      url="https://github.com/lozuponelab/AMON/",
+      download_url="https://github.com/lozuponelab/AMON/tarball/%s" % __version__
 )
