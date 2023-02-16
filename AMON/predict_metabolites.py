@@ -240,6 +240,12 @@ def calculate_enrichment(cos, co_pathway_dict, min_pathway_size=10):
             pathway_data.append([len(pathway_present), len(overlap), prob])
     enrichment_table = pd.DataFrame(pathway_data, index=pathway_names,
                                     columns=["pathway size", "overlap", "probability"])
+    # if 0 rows in enrichment table, return None
+    # otherwise there's a zero division error during p adj
+    if len(enrichment_table.index)==0:
+        raise ValueError("No pathways were identified from the KOs provided."
+                         "Please verify that your KOs are valid (e.g., formatted as K02041)."
+                         "If KOs are correctly formatted, consider lowering the min pathway size param.")
     enrichment_table['adjusted probability'] = p_adjust(enrichment_table.probability)
     if np.any((enrichment_table['adjusted probability'] < .05) & (enrichment_table['overlap'] == 0)):
         return None
