@@ -268,7 +268,7 @@ def make_enrichment_clustermap(pathway_enrichment_dfs: dict, key, output_loc, mi
 def main(kos_loc, output_dir, other_kos_loc=None, compounds_loc=None, name1='gene_set_1', name2='gene_set_2',
          keep_separated=False, samples_are_columns=False, detected_only=False, rxn_compounds_only=False,
          unique_only=True, ko_file_loc=None, rn_file_loc=None, co_file_loc=None, pathway_file_loc=None,
-         write_json=False):
+         write_json=False, try_async=False):
     # create output dir to throw error quick
     makedirs(output_dir)
     logger = Logger(path.join(output_dir, "AMON_log.txt"))
@@ -285,7 +285,7 @@ def main(kos_loc, output_dir, other_kos_loc=None, compounds_loc=None, name1='gen
     logger['Number of samples'] = len(sample_kos)
     logger['Total number of KOs'] = len(all_kos)
 
-    ko_dict = get_kegg_record_dict(set(all_kos), parse_ko, ko_file_loc)
+    ko_dict = get_kegg_record_dict(set(all_kos), parse_ko, ko_file_loc, try_async=try_async)
     if write_json:
         open(path.join(output_dir, 'ko_dict.json'), 'w').write(json.dumps(ko_dict))
         logger['KO json location'] = path.abspath(path.join(output_dir, 'ko_dict.json'))
@@ -296,7 +296,7 @@ def main(kos_loc, output_dir, other_kos_loc=None, compounds_loc=None, name1='gen
     logger['Total number of reactions'] = len(all_rns)
 
     # get reactions from kegg
-    rn_dict = get_kegg_record_dict(set(all_rns), parse_rn, rn_file_loc)
+    rn_dict = get_kegg_record_dict(set(all_rns), parse_rn, rn_file_loc, try_async=try_async)
     if write_json:
         open(path.join(output_dir, 'rn_dict.json'), 'w').write(json.dumps(rn_dict))
         logger['RN json location'] = path.abspath(path.join(output_dir, 'rn_dict.json'))
@@ -333,7 +333,7 @@ def main(kos_loc, output_dir, other_kos_loc=None, compounds_loc=None, name1='gen
         logger['Number of cos produced and detected'] = len(all_cos_produced)
 
     # Get compound data from kegg
-    co_dict = get_kegg_record_dict(all_cos_produced, parse_co, co_file_loc)
+    co_dict = get_kegg_record_dict(all_cos_produced, parse_co, co_file_loc, try_async=try_async)
     if write_json:
         open(path.join(output_dir, 'co_dict.json'), 'w').write(json.dumps(co_dict))
 
@@ -360,7 +360,7 @@ def main(kos_loc, output_dir, other_kos_loc=None, compounds_loc=None, name1='gen
 
     # Get pathway info from pathways in compounds
     all_pathways = [pathway.replace('map', 'ko') for pathway in get_pathways_from_cos(co_dict)]
-    pathway_dict = get_kegg_record_dict(all_pathways, parse_pathway, pathway_file_loc)
+    pathway_dict = get_kegg_record_dict(all_pathways, parse_pathway, pathway_file_loc, try_async=try_async)
     pathway_to_compound_dict = get_pathway_to_co_dict(pathway_dict, no_glycan=False)
 
     # calculate enrichment
