@@ -1,0 +1,13 @@
+scipy 
+biom-format 
+pandas 
+matplotlib 
+statsmodels
+numpy
+aiohttp
+seaborn
+matplotlib-venn
+KEGG-parser
+pytest 
+aiohttp 
+asyncio
