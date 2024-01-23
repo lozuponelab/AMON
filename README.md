@@ -1,5 +1,5 @@
 # AMON
-[![PyPI](https://img.shields.io/pypi/v/AMON-bio.svg)](https://pypi.python.org/pypi/AMON) [![Build Status](https://travis-ci.org/lozuponelab/AMON.svg)](https://travis-ci.org/lozuponelab/AMON) [![Codacy grade](https://img.shields.io/codacy/grade/44d7474307bf4c62a271a9264c0c213a.svg)](https://www.codacy.com/app/lozuponelab/AMON/dashboard) [![Coveralls](https://img.shields.io/coveralls/lozuponelab/AMON.svg)](https://coveralls.io/github/lozuponelab/AMON)
+[![PyPI](https://img.shields.io/pypi/v/KEGG-parser.svg?style=flat)](https://pypi.python.org/pypi/AMON-bio) ![Build Status](https://github.com/lozuponelab/AMON/actions/workflows/main.yml/badge.svg)
 
 A command line tool for predicting the compounds produced by microbes and the host.
 
