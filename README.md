@@ -1,5 +1,5 @@
 # AMON
-[![PyPI](https://img.shields.io/pypi/v/AMON-bio.svg?style=flat)](https://pypi.python.org/pypi/AMON-bio) ![Build Status](https://github.com/lozuponelab/AMON/actions/workflows/main.yml/badge.svg)
+[![PyPI](https://img.shields.io/pypi/v/AMON-bio.svg?style=flat)](https://pypi.python.org/pypi/AMON-bio) ![Build Status](https://github.com/lozuponelab/AMON/actions/workflows/main.yaml/badge.svg)
 
 A command line tool for predicting the compounds produced by microbes and the host.
 
