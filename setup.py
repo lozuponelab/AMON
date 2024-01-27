@@ -1,8 +1,12 @@
 from setuptools import setup, find_packages
 from AMON import __version__ as version
+from pathlib import Path
 
 __author__ = 'lozuponelab'
 __version__ = version
+
+this_directory = Path(__file__).parent
+long_description = (this_directory / "README.md").read_text()
 
 setup(
       name="AMON-bio",
@@ -15,6 +19,8 @@ setup(
       packages=find_packages(),
       description="Annotation of Metabolite Origin via Networks: A tool for predicting putative metabolite origins for"
                   "microbes or between microbes and host with or without metabolomics data",
+      long_description=long_description,
+      long_description_content_type='text/markdown',
       author="Michael Shaffer, Kumar Thurimella",
       author_email='lozuponelab.dev@olucdenver.onmicrosoft.com',
       url="https://github.com/lozuponelab/AMON/",
