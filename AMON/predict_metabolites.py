@@ -10,6 +10,7 @@ import seaborn as sns
 import json
 from collections import defaultdict, OrderedDict
 from datetime import datetime
+from warnings import warn
 
 from KEGG_parser.parsers import parse_ko, parse_rn, parse_co, parse_pathway
 from KEGG_parser.downloader import get_kegg_record_dict
@@ -84,8 +85,9 @@ def get_rns_from_kos(dict_of_kos: dict, ko_dict: dict):
         for ko in list_of_kos:
             try:
                 ko_record = ko_dict[ko]
-                if 'RN' in ko_record['DBLINKS']:
-                    reaction_set += ko_record['DBLINKS']['RN']
+                if 'REACTION' in ko_record.keys():
+                    rxn_ids = [rxn[0] for rxn in ko_record['REACTION']]
+                    reaction_set += rxn_ids
             except KeyError:
                 pass
         sample_rns[sample] = reaction_set
@@ -243,8 +245,11 @@ def calculate_enrichment(cos, co_pathway_dict, min_pathway_size=10):
     # if 0 rows in enrichment table, return None
     # otherwise there's a zero division error during p adj
     if len(enrichment_table.index)==0:
-        raise ValueError("No pathways were identified from the KOs provided."
-                         "Please verify that your KOs are valid (e.g., formatted as K02041).")
+        warn("No pathways were identified from the KOs provided."
+             "Please verify that your KOs are valid (e.g., formatted as K02041).")
+        return None
+    
+    
     enrichment_table['adjusted probability'] = p_adjust(enrichment_table.probability)
     if np.any((enrichment_table['adjusted probability'] < .05) & (enrichment_table['overlap'] == 0)):
         return None
