@@ -129,7 +129,7 @@ def test_read_in_ids_bad_ending():
 
 @pytest.fixture()
 def ko_dict():
-    ko1 = {'ENTRY': 'K00001', 'DBLINKS': {'RN': ['R00000', 'R00001']}}
+    ko1 = {'ENTRY': 'K00001', 'REACTION': ['R00000', 'R00001']}
     ko2 = {'ENTRY': 'K00002', 'DBLINKS': {'COG': ['COG0000']}}
     return {'K00001': ko1, 'K00002': ko2}
 
