@@ -59,7 +59,7 @@ Two flags are available that will affect the Venn diagram made and the enrichmen
 
 Finally a set of locations for KEGG FTP downloaded files is avaliable. These inputs are optional and if they are not provided the KEGG API will be used to retrieve the records necessary. It is much faster to run with the KEGG FTP downloaded files if you have access to them.
 
-**NOTE: the KEGG API has limits. It is currently past the limits of the KEGG API to require all inputs to be pulled from the KEGG API with a reasonably sized data set. This is something I am working on and if you have any suggestions for how to work within these limits please create an issue or pull request with a fix.**
+**NOTE: the KEGG API has limits. For small datasets, (< 100 KOs/COs), data can be pulled quickly and in parallel. However, pulling all data for a reasonably sized dataset from the KEGG API will be rate-limited by KEGG and cannot be done in parallel. Sometimes, KEGG will even deny the connection for this synchronous download if you have hit the request rate limit. If this happens, you may have to wait 30-60 minutes before trying again. If you have any suggestions for how to work within these limits please create an issue or pull request with a fix. Otherwise, paying for a subscription to the [KEGG FTP](https://www.pathway.jp/en/academic.html) will avoid this issue entirely.**
 
 #### Outputs
 
