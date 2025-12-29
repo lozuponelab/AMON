@@ -2,7 +2,7 @@
 
 import argparse
 
-from AMON.predict_metabolites import main
+from predict_metabolites import main
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -34,15 +34,8 @@ if __name__ == '__main__':
     parser.add_argument('--unique_only', help='only use compounds that are unique to a sample in enrichment',
                         action='store_true', default=False)
     # Local KEGG files
-    parser.add_argument('--ko_file_loc', help='Location of ko file from KEGG FTP download')
-    parser.add_argument('--rn_file_loc', help='Location of reaction file from KEGG FTP download')
-    parser.add_argument('--co_file_loc', help='Location of compound file from KEGG FTP download')
-    parser.add_argument('--pathway_file_loc', help='Location of pathway file from KEGG FTP download')
     parser.add_argument('--save_entries', help='Save json file of KEGG entries at all levels used in analysis for '
                                                'deeper analysis', action='store_true', default=False)
-    parser.add_argument('--download_kegg_async', help='KEGG data should be downloaded in parallel (note: this is '
-                                               'faster for small numbers of KOs but fails with larger numbers '
-                                               'due to KEGG API restrictions', action='store_true', default=False)
 
     args = parser.parse_args()
     kos_loc = args.gene_set
@@ -65,16 +58,16 @@ if __name__ == '__main__':
     rn_compounds_only = args.rn_compound_only
     unique_only = args.unique_only
 
-    ko_file_loc = args.ko_file_loc
-    rn_file_loc = args.rn_file_loc
-    co_file_loc = args.co_file_loc
-    pathway_file_loc = args.pathway_file_loc
+    ko_file_loc = "/Users/burkhang/Code_Projs/AMON/KEGG/ko.txt"
+    rn_file_loc = "/Users/burkhang/Code_Projs/AMON/KEGG/reaction.txt"
+    co_file_loc = "/Users/burkhang/Code_Projs/AMON/KEGG/compound.txt"
+    pathway_file_loc = "/Users/burkhang/Code_Projs/AMON/KEGG/pathway.txt"
+    enzyme_file_loc = "/Users/burkhang/Code_Projs_AMON/KEGG_enzyme.txt"
     write_json = args.save_entries
-    try_async=args.download_kegg_async
 
     if detected_compounds_only and detected_compounds is None:
         raise ValueError('Cannot have detected compounds only and not provide detected compounds')
 
     main(kos_loc, output_dir, other_kos_loc, detected_compounds, name1, name2, keep_separated, samples_are_columns,
          detected_compounds_only, rn_compounds_only, unique_only, ko_file_loc=ko_file_loc, rn_file_loc=rn_file_loc,
-         co_file_loc=co_file_loc, pathway_file_loc=pathway_file_loc, write_json=write_json, try_async=try_async)
+         co_file_loc=co_file_loc, pathway_file_loc=pathway_file_loc, write_json=write_json)
