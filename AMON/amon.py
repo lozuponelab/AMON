@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import argparse
-from get_kegg_files import get_kegg_files
-from predict_metabolites import main as amon_main
+from AMON.get_kegg_files import get_kegg_files
+from AMON.predict_metabolites import main as amon_main
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
