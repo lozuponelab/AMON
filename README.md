@@ -57,10 +57,6 @@ The `gene_set` parameter is a list that can be in the form of a plain text file 
 
 Two flags are available that will affect the Venn diagram made and the enrichment analysis that is done. `detected_only` will only include compounds that were detected as the background set of compounds for the hypergeometric test. This flag requires the `compound_detected` variable to be used. The `rn_compound_only` flag makes it so that only detected compounds which have a reaction associated with them in KEGG will be used for both the Venn diagram and the hypergeometric test.
 
-Finally a set of locations for KEGG FTP downloaded files is avaliable. These inputs are optional and if they are not provided the KEGG API will be used to retrieve the records necessary. It is much faster to run with the KEGG FTP downloaded files if you have access to them.
-
-**NOTE: the KEGG API has limits. For small datasets, (< 100 KOs/COs), data can be pulled quickly and in parallel. However, pulling all data for a reasonably sized dataset from the KEGG API will be rate-limited by KEGG and cannot be done in parallel. Sometimes, KEGG will even deny the connection for this synchronous download if you have hit the request rate limit. If this happens, you may have to wait 30-60 minutes before trying again. If you have any suggestions for how to work within these limits please create an issue or pull request with a fix. Otherwise, paying for a subscription to the [KEGG FTP](https://www.pathway.jp/en/academic.html) will avoid this issue entirely.**
-
 #### Outputs
 
 All outputs are written to the `output` directory. If only the `input` parameter is given then two files will be generated called origin_table.tsv, kegg_mapper.tsv and bacteria_enrichment.tsv. The origin_table.tsv has rows as the compounds that could be generated and the first column is true or false indicating if the bacterial KOs provided could generate this KO. If the `other_gene_set` input is provided an additional column will be generated in this table with true/false values indicating if this set of KOs could generate these compounds. If the `detected_compounds` parameter is given then an additional column with true/false values indicating whether or not this compound was generated is added.
@@ -72,49 +68,34 @@ The bacteria_enrichment.tsv file, and the host_enrichment.tsv file if the `other
 When the `other_gene_set` and/or `detected_compounds` parameters are given a venn diagram will be made to see overlap in compounds possibly generated or detected.
 
 #### Full help
-```
-amon.py --help
-usage: amon.py [-h] -i GENE_SET -o OUTPUT_DIR
-               [--detected_compounds DETECTED_COMPOUNDS]
-               [--other_gene_set OTHER_GENE_SET] [--detected_only]
-               [--rn_compound_only] [--ko_file_loc KO_FILE_LOC]
-               [--rn_file_loc RN_FILE_LOC] [--co_file_loc CO_FILE_LOC]
-               [--pathway_file_loc PATHWAY_FILE_LOC] [--save_entries]
-               [--verbose]
 
-optional arguments:
+```
+usage: amon.py [-h] -i GENE_SET -o OUTPUT_DIR [--detected_compounds DETECTED_COMPOUNDS] [--other_gene_set OTHER_GENE_SET] [--gene_set_name GENE_SET_NAME]
+               [--other_gene_set_name OTHER_GENE_SET_NAME] [--keep_separated] [--samples_are_columns] [--detected_only] [--rn_compound_only] [--unique_only] [--save_entries]
+               [--force-download-kegg]
+
+options:
   -h, --help            show this help message and exit
-  -i GENE_SET, --gene_set GENE_SET
-                        KEGG KO's from bacterial community or organism of
-                        interest in the form of a white space separated list,
-                        a tsv or csv with KO ids as column names or a biom
-                        file with KO ids as observations (default: None)
-  -o OUTPUT_DIR, --output_dir OUTPUT_DIR
+  -i, --gene_set GENE_SET
+                        KEGG KO's from bacterial community or organism of interest in the form of a white space separated list, a tsv or csv with KO ids as column names or a biom file with KO ids
+                        as observations (default: None)
+  -o, --output_dir OUTPUT_DIR
                         directory to store output (default: None)
   --detected_compounds DETECTED_COMPOUNDS
-                        list of compounds detected via metabolomics (default:
-                        None)
+                        list of compounds detected via metabolomics (default: None)
   --other_gene_set OTHER_GENE_SET
-                        white space separated list of KEGG KO's from the host,
-                        another organism or other environment (default: None)
-  --detected_only       only use detected compounds in enrichment analysis
-                        (default: False)
-  --rn_compound_only    only use compounds with associated reactions (default:
-                        False)
-  --ko_file_loc KO_FILE_LOC
-                        Location of ko file from KEGG FTP download (default:
-                        None)
-  --rn_file_loc RN_FILE_LOC
-                        Location of reaction file from KEGG FTP download
-                        (default: None)
-  --co_file_loc CO_FILE_LOC
-                        Location of compound file from KEGG FTP download
-                        (default: None)
-  --pathway_file_loc PATHWAY_FILE_LOC
-                        Location of pathway file from KEGG FTP download
-                        (default: None)
-  --save_entries        Save json file of KEGG entries at all levels used in
-                        analysis for deeper analysis (default: False)
-  --verbose             verbose output (default: False)
-
+                        white space separated list of KEGG KO's from the host, another organism or other environment (default: None)
+  --gene_set_name GENE_SET_NAME
+                        Name to use for first gene set (should have no spaces, underscore separated) (default: None)
+  --other_gene_set_name OTHER_GENE_SET_NAME
+                        Name to use for second gene set (should have no spaces, underscore separated) (default: None)
+  --keep_separated      If input in biom or tabular format keep samples separate for analysis (default: False)
+  --samples_are_columns
+                        If data is in tabular format, by default genes are columns and samples rows, to indicate that samples are columns and genes are rows use this flag (default: False)
+  --detected_only       only use detected compounds in enrichment analysis (default: False)
+  --rn_compound_only    only use compounds with associated reactions (default: False)
+  --unique_only         only use compounds that are unique to a sample in enrichment (default: False)
+  --save_entries        Save json file of KEGG entries at all levels used in analysis for deeper analysis (default: False)
+  --force-download-kegg
+                        Re-download KEGG flat files from cloud (default: False)
 ```
