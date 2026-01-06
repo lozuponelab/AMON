@@ -11,17 +11,15 @@ import json
 from collections import defaultdict, OrderedDict
 from datetime import datetime
 from warnings import warn
+import re
 
-from KEGG_parser.parsers import parse_ko, parse_rn, parse_co, parse_pathway
+from KEGG_parser.parsers import parse_ko, parse_rn, parse_co, parse_pathway, parse_enzyme
 from KEGG_parser.downloader import get_kegg_record_dict
 
 sns.set()
 
-# TODO: take multiple files
-
-
 class Logger(OrderedDict):
-    """"""
+    
     def __init__(self, output):
         super(Logger, self).__init__()
         self.output_file = output
@@ -78,25 +76,49 @@ def read_in_ids(file_loc, keep_separated=False, samples_are_columns=False, name=
         raise ValueError('Input file %s does not have a parsable file ending.')
 
 
-def get_rns_from_kos(dict_of_kos: dict, ko_dict: dict):
-    sample_rns = dict()
-    for sample, list_of_kos in dict_of_kos.items():
-        reaction_set = list()
-        for ko in list_of_kos:
-            try:
-                ko_record = ko_dict[ko]
-                if 'REACTION' in ko_record.keys():
-                    rxn_ids = [rxn[0] for rxn in ko_record['REACTION']]
-                    reaction_set += rxn_ids
-            except KeyError:
-                pass
-        sample_rns[sample] = reaction_set
-    return sample_rns
+EC_REGEX = re.compile(r'EC:([\d\.\-]+)')
 
+def get_rns_and_ecs_from_kos(sample_kos, ko_dict):
+    sample_rns = defaultdict(list)
+    ecs_without_rn = set()
+
+    for sample, kos in sample_kos.items():
+        for ko in kos:
+            ko_entry = ko_dict.get(ko, {})
+
+            # Reactions
+            reactions = ko_entry.get('REACTION', [])
+            if reactions:
+                for r in reactions:
+                    sample_rns[sample].append(r[0] if isinstance(r, tuple) else r)
+                continue
+
+            # No reactions → extract ECs from NAME
+            name = ko_entry.get('NAME', '')
+
+            # 🔧 FIX: handle list-valued NAME
+            if isinstance(name, list):
+                name = ' '.join(name)
+
+            ecs = EC_REGEX.findall(name)
+            ecs_without_rn.update(f'EC:{ec}' for ec in ecs)
+
+    return dict(sample_rns), ecs_without_rn
 
 def get_products_from_rns(dict_of_rns: dict, rn_dict: dict):
     return {sample: set([co for rn in list_of_rns for co in rn_dict[rn]['EQUATION'][1]])
             for sample, list_of_rns in dict_of_rns.items()}
+
+_RXN_RE = re.compile(r'R\d{5}')
+
+def extract_reactions_from_all_reac(all_reac_list):
+    """
+    Extract KEGG reaction IDs from ENZYME ALL_REAC field.
+    """
+    reactions = set()
+    for entry in all_reac_list:
+        reactions.update(_RXN_RE.findall(entry))
+    return reactions
 
 
 def reverse_dict_of_lists(dict_of_lists):
@@ -273,7 +295,7 @@ def make_enrichment_clustermap(pathway_enrichment_dfs: dict, key, output_loc, mi
 def main(kos_loc, output_dir, other_kos_loc=None, compounds_loc=None, name1='gene_set_1', name2='gene_set_2',
          keep_separated=False, samples_are_columns=False, detected_only=False, rxn_compounds_only=False,
          unique_only=True, ko_file_loc=None, rn_file_loc=None, co_file_loc=None, pathway_file_loc=None,
-         write_json=False, try_async=False):
+         enzyme_file_loc=None, write_json=False, try_async=False):
     # create output dir to throw error quick
     makedirs(output_dir)
     logger = Logger(path.join(output_dir, "AMON_log.txt"))
@@ -295,8 +317,40 @@ def main(kos_loc, output_dir, other_kos_loc=None, compounds_loc=None, name1='gen
         open(path.join(output_dir, 'ko_dict.json'), 'w').write(json.dumps(ko_dict))
         logger['KO json location'] = path.abspath(path.join(output_dir, 'ko_dict.json'))
 
-    # get all reactions from kos
-    sample_rns = get_rns_from_kos(sample_kos, ko_dict)
+    # get reactions and ECs from KOs
+    sample_rns, ecs_without_rn = get_rns_and_ecs_from_kos(sample_kos, ko_dict)
+
+    # get enzyme information
+    enzyme_dict = get_kegg_record_dict(
+        ecs_without_rn,
+        parse_enzyme,
+        enzyme_file_loc,
+        try_async=try_async
+    )
+
+    if write_json:
+        open(path.join(output_dir, 'enzyme_dict.json'), 'w').write(json.dumps(enzyme_dict))
+        logger['Enzyme json location'] = path.abspath(path.join(output_dir, 'enzyme_dict.json'))
+
+    # get reactions from enzymes 
+    ec_to_rns = defaultdict(set)
+    for ec, record in enzyme_dict.items():
+        if 'ALL_REAC' in record:
+            ec_to_rns[ec].update(
+                extract_reactions_from_all_reac(record['ALL_REAC'])
+            )
+    
+    # add enzyme derived reactions 
+    for sample, kos in sample_kos.items():
+        for ko in kos:
+            ko_record = ko_dict.get(ko, {})
+            if 'ENZYME' in ko_record and 'REACTION' not in ko_record:
+                for ec in ko_record['ENZYME']:
+                    sample_rns[sample].extend(ec_to_rns.get(ec, []))
+
+    # Deduplicate reactions per sample
+    sample_rns = {s: list(set(rns)) for s, rns in sample_rns.items()}
+
     all_rns = set([value for values in sample_rns.values() for value in values])
     logger['Total number of reactions'] = len(all_rns)
 

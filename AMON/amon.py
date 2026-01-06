@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 import argparse
+from get_kegg_files import get_kegg_files
+from predict_metabolites import main as amon_main
 
-from AMON.predict_metabolites import main
-
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # Primary inputs
     parser.add_argument('-i', '--gene_set', help="KEGG KO's from bacterial community or organism of interest in the "
@@ -34,47 +34,44 @@ if __name__ == '__main__':
     parser.add_argument('--unique_only', help='only use compounds that are unique to a sample in enrichment',
                         action='store_true', default=False)
     # Local KEGG files
-    parser.add_argument('--ko_file_loc', help='Location of ko file from KEGG FTP download')
-    parser.add_argument('--rn_file_loc', help='Location of reaction file from KEGG FTP download')
-    parser.add_argument('--co_file_loc', help='Location of compound file from KEGG FTP download')
-    parser.add_argument('--pathway_file_loc', help='Location of pathway file from KEGG FTP download')
     parser.add_argument('--save_entries', help='Save json file of KEGG entries at all levels used in analysis for '
                                                'deeper analysis', action='store_true', default=False)
-    parser.add_argument('--download_kegg_async', help='KEGG data should be downloaded in parallel (note: this is '
-                                               'faster for small numbers of KOs but fails with larger numbers '
-                                               'due to KEGG API restrictions', action='store_true', default=False)
-
+    parser.add_argument("--force-download-kegg", help="Re-download KEGG flat files from cloud",
+                        action="store_true", default=False)
+    
     args = parser.parse_args()
-    kos_loc = args.gene_set
-    output_dir = args.output_dir
-    detected_compounds = args.detected_compounds
-    other_kos_loc = args.other_gene_set
-    if args.gene_set_name is None:
-        name1 = "gene_set_1"
-    else:
-        name1 = args.gene_set_name
-    if args.other_gene_set_name is None:
-        name2 = "gene_set_2"
-    else:
-        name2 = args.other_gene_set_name
 
-    keep_separated = args.keep_separated
-    samples_are_columns = args.samples_are_columns
+    name1 = args.gene_set_name or "gene_set_1"
+    name2 = args.other_gene_set_name or "gene_set_2"
 
-    detected_compounds_only = args.detected_only
-    rn_compounds_only = args.rn_compound_only
-    unique_only = args.unique_only
+    if args.detected_only and args.detected_compounds is None:
+        raise ValueError(
+            "Cannot use --detected_only without --detected_compounds"
+        )
 
-    ko_file_loc = args.ko_file_loc
-    rn_file_loc = args.rn_file_loc
-    co_file_loc = args.co_file_loc
-    pathway_file_loc = args.pathway_file_loc
-    write_json = args.save_entries
-    try_async=args.download_kegg_async
+    # Resolve KEGG flat files (cloud + cache)
+    kegg_paths = get_kegg_files(force_download=args.force_download_kegg)
 
-    if detected_compounds_only and detected_compounds is None:
-        raise ValueError('Cannot have detected compounds only and not provide detected compounds')
+    amon_main(
+        args.gene_set,
+        args.output_dir,
+        args.other_gene_set,
+        args.detected_compounds,
+        name1,
+        name2,
+        args.keep_separated,
+        args.samples_are_columns,
+        args.detected_only,
+        args.rn_compound_only,
+        args.unique_only,
+        ko_file_loc=kegg_paths["ko"],
+        rn_file_loc=kegg_paths["reaction"],
+        co_file_loc=kegg_paths["compound"],
+        pathway_file_loc=kegg_paths["pathway"],
+        enzyme_file_loc=kegg_paths["enzyme"],
+        write_json=args.save_entries,
+    )
 
-    main(kos_loc, output_dir, other_kos_loc, detected_compounds, name1, name2, keep_separated, samples_are_columns,
-         detected_compounds_only, rn_compounds_only, unique_only, ko_file_loc=ko_file_loc, rn_file_loc=rn_file_loc,
-         co_file_loc=co_file_loc, pathway_file_loc=pathway_file_loc, write_json=write_json, try_async=try_async)
+
+if __name__ == "__main__":
+    main()

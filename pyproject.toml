@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "AMON-bio"
+dynamic = ["version"]
+description = """
+Annotation of Metabolite Origin via Networks: A tool for predicting putative
+metabolite origins for microbes or between microbes and host with or without
+metabolomics data
+"""
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Michael Shaffer" },
+    { name = "Kumar Thurimella" }
+]
+email = "lozuponelab.dev@olucdenver.onmicrosoft.com"
+
+dependencies = [
+    "scipy",
+    "biom-format",
+    "pandas",
+    "matplotlib",
+    "statsmodels",
+    "numpy",
+    "aiohttp",
+    "seaborn",
+    "matplotlib-venn",
+    "KEGG-parser"
+]
+
+[project.urls]
+Homepage = "https://github.com/lozuponelab/AMON/"
+Download = "https://github.com/lozuponelab/AMON/tarball"
+
+[project.scripts]
+amon = "AMON.amon:main"
+extract_ko_genome_from_organism = "AMON.extract_ko_genome_from_organism:main"
+
+[tool.setuptools]
+packages = { find = {} }
+
+[tool.setuptools.dynamic]
+version = { attr = "AMON.__version__" }
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
