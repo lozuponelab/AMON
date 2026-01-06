@@ -76,34 +76,34 @@ def read_in_ids(file_loc, keep_separated=False, samples_are_columns=False, name=
         raise ValueError('Input file %s does not have a parsable file ending.')
 
 
-def get_rns_and_ecs_from_kos(dict_of_kos: dict, ko_dict: dict):
-    sample_rns = {}
+EC_REGEX = re.compile(r'EC:([\d\.\-]+)')
+
+def get_rns_and_ecs_from_kos(sample_kos, ko_dict):
+    sample_rns = defaultdict(list)
     ecs_without_rn = set()
 
-    for sample, list_of_kos in dict_of_kos.items():
-        reaction_set = []
+    for sample, kos in sample_kos.items():
+        for ko in kos:
+            ko_entry = ko_dict.get(ko, {})
 
-        for ko in list_of_kos:
-            try:
-                ko_record = ko_dict[ko]
+            # Reactions
+            reactions = ko_entry.get('REACTION', [])
+            if reactions:
+                for r in reactions:
+                    sample_rns[sample].append(r[0] if isinstance(r, tuple) else r)
+                continue
 
-                # Case 1: KO has reactions
-                if 'REACTION' in ko_record:
-                    rxn_ids = [rxn[0] for rxn in ko_record['REACTION']]
-                    reaction_set.extend(rxn_ids)
+            # No reactions → extract ECs from NAME
+            name = ko_entry.get('NAME', '')
 
-                # Case 2: KO has EC number(s) but no reactions
-                elif 'ENZYME' in ko_record:
-                    ecs_without_rn.update(ko_record['ENZYME'])
+            # 🔧 FIX: handle list-valued NAME
+            if isinstance(name, list):
+                name = ' '.join(name)
 
-            except KeyError:
-                pass
+            ecs = EC_REGEX.findall(name)
+            ecs_without_rn.update(f'EC:{ec}' for ec in ecs)
 
-        sample_rns[sample] = reaction_set
-
-    return sample_rns, ecs_without_rn
-
-
+    return dict(sample_rns), ecs_without_rn
 
 def get_products_from_rns(dict_of_rns: dict, rn_dict: dict):
     return {sample: set([co for rn in list_of_rns for co in rn_dict[rn]['EQUATION'][1]])
@@ -295,7 +295,7 @@ def make_enrichment_clustermap(pathway_enrichment_dfs: dict, key, output_loc, mi
 def main(kos_loc, output_dir, other_kos_loc=None, compounds_loc=None, name1='gene_set_1', name2='gene_set_2',
          keep_separated=False, samples_are_columns=False, detected_only=False, rxn_compounds_only=False,
          unique_only=True, ko_file_loc=None, rn_file_loc=None, co_file_loc=None, pathway_file_loc=None,
-         write_json=False, try_async=False):
+         enzyme_file_loc=None, write_json=False, try_async=False):
     # create output dir to throw error quick
     makedirs(output_dir)
     logger = Logger(path.join(output_dir, "AMON_log.txt"))
@@ -324,8 +324,13 @@ def main(kos_loc, output_dir, other_kos_loc=None, compounds_loc=None, name1='gen
     enzyme_dict = get_kegg_record_dict(
         ecs_without_rn,
         parse_enzyme,
+        enzyme_file_loc,
         try_async=try_async
     )
+
+    if write_json:
+        open(path.join(output_dir, 'enzyme_dict.json'), 'w').write(json.dumps(enzyme_dict))
+        logger['Enzyme json location'] = path.abspath(path.join(output_dir, 'enzyme_dict.json'))
 
     # get reactions from enzymes 
     ec_to_rns = defaultdict(set)

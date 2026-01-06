@@ -12,6 +12,7 @@ dependencies:
   - biom-format
   - aiohttp
   - pytest
+  - wget
   - pip:
     - matplotlib-venn
     - KEGG-parser
