@@ -4,13 +4,50 @@ import pandas as pd
 from biom.table import Table
 from os.path import isfile
 import numpy as np
+from collections import defaultdict
 
-from AMON.predict_metabolites import p_adjust, read_in_ids, make_compound_origin_table, get_rns_from_kos, \
+from AMON.predict_metabolites import p_adjust, read_in_ids, make_compound_origin_table, get_rns_and_ecs_from_kos, \
                                      get_products_from_rns, get_pathways_from_cos, get_pathway_to_co_dict, \
                                      make_venn, calculate_enrichment, make_enrichment_clustermap, \
                                      make_kegg_mapper_input, reverse_dict_of_lists, merge_dicts_of_lists,\
                                      get_unique_from_dict_of_lists
 
+
+@pytest.fixture()
+def ko_dict():
+    return {
+        'K00001': {
+            'ENTRY': 'K00001',
+            'REACTION': ['R00000', 'R00001'],
+            'NAME': 'alcohol dehydrogenase [EC:1.1.1.1]'
+        },
+        'K00002': {
+            'ENTRY': 'K00002',
+            'NAME': 'some enzyme [EC:2.2.2.2]'
+        }
+    }
+
+@pytest.fixture()
+def mock_sample_kos():
+    return {
+        'sample1': {'K00001', 'K00002', 'K00004'},
+        'sample2': {'K00003'},
+        'sample3': {'K00004'}  # KO with no REACTION or ENZYME
+    }
+
+def test_get_rns_and_ecs_from_kos_name_as_list():
+    ko_dict = {
+        'K00002': {
+            'ENTRY': 'K00002',
+            'NAME': ['some enzyme [EC:2.2.2.2]', 'alias']
+        }
+    }
+    sample_kos = {'Sample1': {'K00002'}}
+
+    sample_rns, ecs_without_rn = get_rns_and_ecs_from_kos(sample_kos, ko_dict)
+
+    assert sample_rns == {}
+    assert ecs_without_rn == {'EC:2.2.2.2'}
 
 @pytest.fixture()
 def list_of_pvalues():
@@ -128,25 +165,10 @@ def test_read_in_ids_bad_ending():
 
 
 @pytest.fixture()
-def ko_dict():
-    ko1 = {'ENTRY': 'K00001', 'REACTION': ['R00000', 'R00001']}
-    ko2 = {'ENTRY': 'K00002', 'DBLINKS': {'COG': ['COG0000']}}
-    return {'K00001': ko1, 'K00002': ko2}
-
-
-@pytest.fixture()
 def dict_of_kos(list_of_kos):
     return {'Sample1': {'K00001', 'K00002'},
             'Sample2': {'K00001'}
     }
-
-
-def test_get_rns_from_kos(dict_of_kos, ko_dict):
-    rns = get_rns_from_kos(dict_of_kos, ko_dict)
-    assert len(rns) == 2
-    assert len(rns['Sample1']) == 2
-    assert len(rns['Sample2']) == 2
-
 
 @pytest.fixture()
 def list_of_rns():
