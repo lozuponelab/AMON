@@ -32,7 +32,7 @@ AMON includes two scripts. `extract_ko_genome_from_organism.py` takes a KEGG org
 ### `extract_ko_genome_from_organism.py`
 A simple script. Takes a download of an organism file from KEGG or a KEGG organism ID and outputs a new line separate list of KOs present in that file.
 ```
-extract_ko_genome_from_organism.py --help
+extract_ko_genome_from_organism --help
 usage: extract_ko_genome_from_organism.py [-h] -i INPUT -o OUTPUT
                                           [--from_flat_file]
 
@@ -70,7 +70,7 @@ When the `other_gene_set` and/or `detected_compounds` parameters are given a ven
 #### Full help
 
 ```
-usage: amon.py [-h] -i GENE_SET -o OUTPUT_DIR [--detected_compounds DETECTED_COMPOUNDS] [--other_gene_set OTHER_GENE_SET] [--gene_set_name GENE_SET_NAME]
+usage: amon [-h] -i GENE_SET -o OUTPUT_DIR [--detected_compounds DETECTED_COMPOUNDS] [--other_gene_set OTHER_GENE_SET] [--gene_set_name GENE_SET_NAME]
                [--other_gene_set_name OTHER_GENE_SET_NAME] [--keep_separated] [--samples_are_columns] [--detected_only] [--rn_compound_only] [--unique_only] [--save_entries]
                [--force-download-kegg]
 
