@@ -13,6 +13,7 @@ dependencies:
   - aiohttp
   - pytest
   - wget
+  - pip
   - pip:
     - matplotlib-venn
     - KEGG-parser
